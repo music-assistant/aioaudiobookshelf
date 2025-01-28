@@ -10,7 +10,7 @@ from . import _BaseModel
 
 @dataclass
 class AuthorMinified(_BaseModel):
-    """ABSAuthorMinified.
+    """AuthorMinified.
 
     https://api.audiobookshelf.org/#author
     """
@@ -20,8 +20,8 @@ class AuthorMinified(_BaseModel):
 
 
 @dataclass
-class ABSAuthor(AuthorMinified):
-    """ABSAuthor."""
+class Author(AuthorMinified):
+    """Author."""
 
     asin: str | None
     description: str | None
@@ -31,7 +31,7 @@ class ABSAuthor(AuthorMinified):
 
 
 @dataclass
-class ABSAuthorExpanded(ABSAuthor):
+class AuthorExpanded(Author):
     """ABSAuthorExpanded."""
 
     num_books: Annotated[int, Alias("numBooks")]
