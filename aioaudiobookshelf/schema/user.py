@@ -69,7 +69,7 @@ class User(_UserBase):
 
     # this seems to be missing
     # empty = all accessible
-    item_tags_accessible: Annotated[list[str], Alias("itemTagsAccessible")]
+    # item_tags_accessible: Annotated[list[str], Alias("itemTagsAccessible")]
 
 
 # not yet added:
