@@ -1,0 +1,27 @@
+"""Requests and responses to talk to abs api."""
+
+from dataclasses import dataclass
+from typing import Annotated
+
+from mashumaro.mixins.json import DataClassJSONMixin
+from mashumaro.types import Alias
+
+from .user import User
+
+
+@dataclass
+class LoginRequest(DataClassJSONMixin):
+    """Login params."""
+
+    username: str
+    password: str
+
+
+@dataclass
+class LoginResponse(DataClassJSONMixin):
+    """Response to login request."""
+
+    user: User
+    user_default_library_id: Annotated[str, Alias("userDefaultLibraryId")]
+    # server_settings: Annotated[ServerSettings, Alias("serverSettings")]
+    Source: str
