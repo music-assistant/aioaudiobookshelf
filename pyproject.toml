@@ -115,6 +115,7 @@ ignore = [
   "TRY003", # Just annoying, not really useful
   "TRY400", # Just annoying, not really useful
   "COM812", # Conflicts with the Ruff formatter
+  "ERA001", # allow commented out code
 ]
 
 select = ["ALL"]
