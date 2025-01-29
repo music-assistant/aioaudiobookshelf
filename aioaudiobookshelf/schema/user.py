@@ -1,6 +1,6 @@
 """User schema."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Annotated
 
@@ -67,9 +67,11 @@ class User(_UserBase):
     # empty = all accessible
     libraries_accessible: Annotated[list[str], Alias("librariesAccessible")]
 
-    # this seems to be missing
+    # is apparently omitted if empty
     # empty = all accessible
-    # item_tags_accessible: Annotated[list[str], Alias("itemTagsAccessible")]
+    item_tags_accessible: Annotated[list[str], Alias("itemTagsAccessible")] = field(
+        default_factory=list
+    )
 
 
 # not yet added:

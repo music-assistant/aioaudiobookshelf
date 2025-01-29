@@ -20,14 +20,3 @@ class FileMetadata(_BaseModel):
     modified_time_ms: Annotated[int, Alias("mtimeMs")]
     changed_time_ms: Annotated[int, Alias("ctimeMs")]
     created_time_ms: Annotated[int, Alias("birthtimeMs")] = 0  # 0 if unknown
-
-
-@dataclass
-class EBookFile(_BaseModel):
-    """EBookFile."""
-
-    ino: str
-    metadata: FileMetadata
-    ebook_format: Annotated[str, Alias("ebookFormat")]
-    added_at: Annotated[int, Alias("addedAt")]  # time in ms since unix epoch
-    updated_at: Annotated[int, Alias("updatedAt")]  # time in ms since unix epoch

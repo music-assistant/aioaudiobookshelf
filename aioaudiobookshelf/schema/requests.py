@@ -6,6 +6,7 @@ from typing import Annotated
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.types import Alias
 
+from .server import ServerSettings
 from .user import User
 
 
@@ -23,5 +24,5 @@ class LoginResponse(DataClassJSONMixin):
 
     user: User
     user_default_library_id: Annotated[str, Alias("userDefaultLibraryId")]
-    # server_settings: Annotated[ServerSettings, Alias("serverSettings")]
+    server_settings: Annotated[ServerSettings, Alias("serverSettings")]
     Source: str

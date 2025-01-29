@@ -68,3 +68,11 @@ class UserClient(_BaseClient):
     def _verify_user(self) -> None:
         if self.user.type_ not in [UserType.ADMIN, UserType.ROOT, UserType.USER]:
             raise BadUserError
+
+
+class AdminClient(UserClient):
+    """Client which uses endpoints accessible to users and admins."""
+
+    def _verify_user(self) -> None:
+        if self.user.type_ not in [UserType.ADMIN, UserType.ROOT]:
+            raise BadUserError

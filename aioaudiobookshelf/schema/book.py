@@ -6,10 +6,21 @@ from typing import Annotated
 from mashumaro.types import Alias
 
 from . import _BaseModel
-from .audio import AudioTrack
+from .audio import AudioFile, AudioTrack
 from .author import AuthorMinified
-from .file import EBookFile
+from .file import FileMetadata
 from .series import SeriesSequence
+
+
+@dataclass
+class EBookFile(_BaseModel):
+    """EBookFile."""
+
+    ino: str
+    metadata: FileMetadata
+    ebook_format: Annotated[str, Alias("ebookFormat")]
+    added_at: Annotated[int, Alias("addedAt")]  # time in ms since unix epoch
+    updated_at: Annotated[int, Alias("updatedAt")]  # time in ms since unix epoch
 
 
 @dataclass
@@ -82,7 +93,7 @@ class Book(_BookBase):
 
     library_item_id: Annotated[str, Alias("libraryItemId")]
     metadata: BookMetadata
-    # audio_files: Annotated[list[AudioFile], Alias("audioFiles")]
+    audio_files: Annotated[list[AudioFile], Alias("audioFiles")]
     chapters: list[BookChapter]
     ebook_file: Annotated[EBookFile | None, Alias("ebookFile")]
 
@@ -106,7 +117,7 @@ class BookExpanded(_BookBase):
 
     library_item_id: Annotated[str, Alias("libraryItemId")]
     metadata: BookMetadataExpanded
-    # audio_files: Annotated[list[AudioFile], Alias("audioFiles")]
+    audio_files: Annotated[list[AudioFile], Alias("audioFiles")]
     chapters: list[BookChapter]
     ebook_file: Annotated[EBookFile | None, Alias("ebookFile")]
     duration: float

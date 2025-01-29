@@ -6,7 +6,7 @@ from typing import Annotated
 from mashumaro.types import Alias
 
 from . import _BaseModel
-from .audio import AudioTrack
+from .audio import AudioFile, AudioTrack
 
 
 @dataclass
@@ -39,6 +39,15 @@ PodcastMetaDataExpanded = PodcastMetadataMinified
 
 
 @dataclass
+class PodcastEpisodeEnclosure(_BaseModel):
+    """PodcastEpisodeEnclosure."""
+
+    url: str
+    type_: Annotated[str, Alias("type")]
+    length: str
+
+
+@dataclass
 class PodcastEpisode(_BaseModel):
     """PodcastEpisode."""
 
@@ -51,9 +60,9 @@ class PodcastEpisode(_BaseModel):
     title: str
     subtitle: str
     description: str
-    # enclosure: PodcastEpisodeEnclosure
+    enclosure: PodcastEpisodeEnclosure
     pub_date: Annotated[str, Alias("pubDate")]
-    # audio_file: AudioFile
+    audio_file: AudioFile
     published_at: Annotated[int, Alias("publishedAt")]  # ms posix epoch
     added_at: Annotated[int, Alias("addedAt")]  # ms posix epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms posix epoch
@@ -103,6 +112,8 @@ class PodcastMinified(_PodcastBase):
 class PodcastExpanded(_PodcastBase):
     """PodcastEpisodeExpanded."""
 
+    library_item_id: Annotated[str, Alias("libraryItemId")]
+    tags: list[str]
     size: int  # bytes
     metadata: PodcastMetaDataExpanded
     episodes: list[PodcastEpisodeExpanded]
