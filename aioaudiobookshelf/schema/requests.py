@@ -25,4 +25,4 @@ class LoginResponse(DataClassJSONMixin):
     user: User
     user_default_library_id: Annotated[str, Alias("userDefaultLibraryId")]
     server_settings: Annotated[ServerSettings, Alias("serverSettings")]
-    Source: str
+    source: Annotated[str, Alias("Source")]
