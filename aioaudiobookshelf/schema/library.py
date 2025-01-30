@@ -1,10 +1,16 @@
 """Library Schema."""
+# Discriminators don't work together with aliases.
+# https://github.com/Fatal1ty/mashumaro/issues/254
+# ruff: noqa: N815
 
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Annotated
 
 from mashumaro.types import Alias, Discriminator
+
+from aioaudiobookshelf.schema.author import AuthorMinified
+from aioaudiobookshelf.schema.series import SeriesFilterData
 
 from . import _BaseModel
 from .book import Book, BookExpanded, BookMinified
@@ -107,7 +113,7 @@ class LibraryItem(_LibraryItemBase):
         """Config."""
 
         discriminator = Discriminator(
-            field="media_type",
+            field="mediaType",
             include_subtypes=True,
         )
 
@@ -121,7 +127,7 @@ class LibraryItemBook(LibraryItem):
     """LibraryItemBook."""
 
     media: Book
-    media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.BOOK
+    mediaType: LibraryMediaType = LibraryMediaType.BOOK
 
 
 @dataclass
@@ -129,7 +135,7 @@ class LibraryItemPodcast(LibraryItem):
     """LibraryItemPodcast."""
 
     media: Podcast
-    media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.PODCAST
+    mediaType: LibraryMediaType = LibraryMediaType.PODCAST
 
 
 @dataclass
@@ -140,7 +146,7 @@ class LibraryItemMinified(_LibraryItemBase):
         """Config."""
 
         discriminator = Discriminator(
-            field="media_type",
+            field="mediaType",
             include_subtypes=True,
         )
 
@@ -153,7 +159,11 @@ class LibraryItemMinifiedBook(LibraryItemMinified):
     """LibraryItemMinifiedBook."""
 
     media: BookMinified
-    media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.BOOK
+    mediaType: LibraryMediaType = LibraryMediaType.BOOK
+    # media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.BOOK
+    # media_type: LibraryMediaType = field(
+    #     metadata=field_options(alias="mediaType"), default=LibraryMediaType.BOOK
+    # )
 
 
 @dataclass
@@ -161,7 +171,11 @@ class LibraryItemMinifiedPodcast(LibraryItemMinified):
     """LibraryItemMinifiedPodcast."""
 
     media: PodcastMinified
-    media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.PODCAST
+    mediaType: LibraryMediaType = LibraryMediaType.PODCAST
+    # media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.PODCAST
+    # media_type: LibraryMediaType = field(
+    #     metadata=field_options(alias="mediaType"), default=LibraryMediaType.PODCAST
+    # )
 
 
 @dataclass
@@ -172,7 +186,7 @@ class LibraryItemExpanded(LibraryItem):
         """Config."""
 
         discriminator = Discriminator(
-            field="media_type",
+            field="mediaType",
             include_subtypes=True,
         )
 
@@ -184,7 +198,7 @@ class LibraryItemExpandedBook(LibraryItemExpanded):
     """LibraryItemExpandedBook."""
 
     media: BookExpanded
-    media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.BOOK
+    mediaType: LibraryMediaType = LibraryMediaType.BOOK
 
 
 @dataclass
@@ -192,4 +206,16 @@ class LibraryItemExpandedPodcast(LibraryItemExpanded):
     """LibraryItemExpandedPodcast."""
 
     media: PodcastExpanded
-    media_type: Annotated[LibraryMediaType, Alias("mediaType")] = LibraryMediaType.PODCAST
+    mediaType: LibraryMediaType = LibraryMediaType.PODCAST
+
+
+@dataclass
+class LibraryFilterData(_BaseModel):
+    """LibraryFilterData."""
+
+    authors: list[AuthorMinified]
+    genres: list[str]
+    tags: list[str]
+    series: list[SeriesFilterData]
+    narrators: list[str]
+    languages: list[str]

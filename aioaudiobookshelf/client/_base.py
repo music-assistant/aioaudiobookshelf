@@ -1,0 +1,56 @@
+"""BaseClient."""
+
+from abc import abstractmethod
+from typing import Any
+
+from aioaudiobookshelf.client.session import SessionConfiguration
+from aioaudiobookshelf.schema.calls_login import LoginResponse
+
+
+class BaseClient:
+    """Base for clients."""
+
+    def __init__(self, session_config: SessionConfiguration, login_response: LoginResponse) -> None:
+        self.session_config = session_config
+        self.user = login_response.user
+        if self.session_config.token is None:
+            self.session_config.token = login_response.user.token
+
+        self._verify_user()
+
+    @abstractmethod
+    def _verify_user(self) -> None:
+        """Verify if user has enough permissions for endpoints in use."""
+
+    async def _post(
+        self,
+        endpoint: str,
+        data: dict[str, Any] | None = None,
+    ) -> bytes:
+        """POST request to abs api."""
+        response = await self.session_config.session.post(
+            f"{self.session_config.url}/{endpoint}",
+            json=data,
+            ssl=self.session_config.verify_ssl,
+            headers=self.session_config.headers,
+        )
+        return await response.read()
+
+    async def _get(self, endpoint: str, params: dict[str, str | int] | None = None) -> bytes:
+        """GET request to abs api."""
+        response = await self.session_config.session.get(
+            f"{self.session_config.url}/{endpoint}",
+            params=params,
+            ssl=self.session_config.verify_ssl,
+            headers=self.session_config.headers,
+        )
+        status = response.status
+        if response.content_type == "application/json":
+            return await response.read()
+        if status == 404:
+            return b""
+        raise RuntimeError("Response must be json.")
+
+    async def logout(self) -> None:
+        """Logout client."""
+        await self._post("logout")

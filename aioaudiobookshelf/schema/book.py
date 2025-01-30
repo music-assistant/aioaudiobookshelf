@@ -108,7 +108,8 @@ class BookMinified(_BookBase):
     num_chapters: Annotated[int, Alias("numChapters")]
     duration: float  # in s
     size: int  # in bytes
-    ebook_format: Annotated[str | None, Alias("ebookFormat")]
+    # not set if missing
+    ebook_format: Annotated[str | None, Alias("ebookFormat")] = None
 
 
 @dataclass

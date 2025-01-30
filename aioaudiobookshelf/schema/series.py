@@ -16,6 +16,10 @@ class _SeriesBase(_BaseModel):
     name: str
 
 
+# in get_library call including filterdata we get only id and name of series
+SeriesFilterData = _SeriesBase
+
+
 @dataclass
 class Series(_SeriesBase):
     """Series."""

@@ -2,15 +2,16 @@
 
 from aiohttp.client_exceptions import ClientResponseError
 
-from .client import AdminClient, SessionConfiguration, UserClient
-from .exceptions import LoginError
-from .schema.requests import LoginRequest, LoginResponse
+from aioaudiobookshelf.client import AdminClient, UserClient
+from aioaudiobookshelf.client.session import SessionConfiguration
+from aioaudiobookshelf.exceptions import LoginError
+from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
 
 
 async def _get_login_response(
     *, session_config: SessionConfiguration, username: str, password: str
 ) -> LoginResponse:
-    login_request = LoginRequest(username=username, password=password).to_dict()
+    login_request = LoginParameters(username=username, password=password).to_dict()
 
     try:
         resp = await session_config.session.post(

@@ -11,7 +11,7 @@ from .user import User
 
 
 @dataclass
-class LoginRequest(DataClassJSONMixin):
+class LoginParameters(DataClassJSONMixin):
     """Login params."""
 
     username: str
