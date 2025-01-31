@@ -22,7 +22,8 @@ class PodcastMetadata(_BaseModel):
     image_url: Annotated[str | None, Alias("imageUrl")]
     itunes_page_url: Annotated[str | None, Alias("itunesPageUrl")]
     itunes_id: Annotated[int | None, Alias("itunesId")]
-    itunes_artist_id: Annotated[int | None, Alias("itunesArtistId")]
+    # str: is not documented
+    itunes_artist_id: Annotated[int | str | None, Alias("itunesArtistId")]
     explicit: bool
     language: str | None
     type_: Annotated[str | None, Alias("type")]
@@ -84,7 +85,8 @@ class _PodcastBase(_BaseModel):
     cover_path: Annotated[str | None, Alias("coverPath")]
     auto_download_episodes: Annotated[bool, Alias("autoDownloadEpisodes")]
     auto_download_schedule: Annotated[str, Alias("autoDownloadSchedule")]
-    last_episode_check_ms: Annotated[int, Alias("lastEpisodeCheck")]
+    # None is not documented
+    last_episode_check_ms: Annotated[int | None, Alias("lastEpisodeCheck")]
     max_episodes_to_keep: Annotated[int, Alias("maxEpisodesToKeep")]  # 0 = all
     max_new_episodes_to_download: Annotated[int, Alias("maxNewEpisodesToDownload")]
 
