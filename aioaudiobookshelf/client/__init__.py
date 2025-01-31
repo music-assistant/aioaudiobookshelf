@@ -9,10 +9,17 @@ from .items import ItemsClient
 from .libraries import LibrariesClient
 from .me import MeClient
 from .playlists import PlaylistsClient
+from .series import SeriesClient
 
 
 class UserClient(
-    LibrariesClient, ItemsClient, CollectionsClient, PlaylistsClient, MeClient, AuthorsClient
+    LibrariesClient,
+    ItemsClient,
+    CollectionsClient,
+    PlaylistsClient,
+    MeClient,
+    AuthorsClient,
+    SeriesClient,
 ):
     """Client which uses endpoints accessible to a user."""
 
