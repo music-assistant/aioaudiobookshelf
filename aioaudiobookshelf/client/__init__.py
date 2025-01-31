@@ -6,9 +6,10 @@ from aioaudiobookshelf.schema.user import UserType
 from .collections_ import CollectionsClient
 from .items import ItemsClient
 from .libraries import LibrariesClient
+from .playlists import PlaylistsClient
 
 
-class UserClient(LibrariesClient, ItemsClient, CollectionsClient):
+class UserClient(LibrariesClient, ItemsClient, CollectionsClient, PlaylistsClient):
     """Client which uses endpoints accessible to a user."""
 
     def _verify_user(self) -> None:
