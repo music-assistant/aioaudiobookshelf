@@ -61,9 +61,8 @@ class _PodcastEpisodeBase(_BaseModel):
     title: str
     subtitle: str
     description: str
-    enclosure: PodcastEpisodeEnclosure
     pub_date: Annotated[str, Alias("pubDate")]
-    published_at: Annotated[int, Alias("publishedAt")]  # ms posix epoch
+    published_at: Annotated[int | None, Alias("publishedAt")]  # ms posix epoch
     added_at: Annotated[int, Alias("addedAt")]  # ms posix epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms posix epoch
 
@@ -74,6 +73,8 @@ class PodcastEpisode(_PodcastEpisodeBase):
 
     # might be missing in playlists
     audio_file: AudioFile | None = None
+    # might be missing if manually added
+    enclosure: PodcastEpisodeEnclosure | None = None
 
 
 @dataclass
@@ -85,6 +86,8 @@ class PodcastEpisodeExpanded(_PodcastEpisodeBase):
     size: int
     # might be missing in playlists
     audio_file: AudioFile | None = None
+    # might be missing if manually added
+    enclosure: PodcastEpisodeEnclosure | None = None
 
 
 @dataclass

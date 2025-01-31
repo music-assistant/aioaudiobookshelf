@@ -13,8 +13,9 @@ from .items import ItemsClient
 from .libraries import LibrariesClient
 from .me import MeClient
 from .playlists import PlaylistsClient
+from .podcasts import PodcastsClient
 from .series import SeriesClient
-from .session import SessionsClient
+from .session import SessionClient
 
 
 @dataclass(kw_only=True)
@@ -47,7 +48,8 @@ class UserClient(
     MeClient,
     AuthorsClient,
     SeriesClient,
-    SessionsClient,
+    SessionClient,
+    PodcastsClient,
 ):
     """Client which uses endpoints accessible to a user."""
 

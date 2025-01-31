@@ -5,8 +5,8 @@ from aioaudiobookshelf.schema.calls_session import CloseOpenSessionsParameters
 from aioaudiobookshelf.schema.session import PlaybackSessionExpanded
 
 
-class SessionsClient(BaseClient):
-    """SessionsClient."""
+class SessionClient(BaseClient):
+    """SessionClient."""
 
     # get_all_session # admin
     # delete session
