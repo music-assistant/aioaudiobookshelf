@@ -1,27 +1,27 @@
-"""Session configuration."""
+"""Calls to /api/session."""
 
-from dataclasses import dataclass
+from aioaudiobookshelf.client._base import BaseClient
+from aioaudiobookshelf.schema.calls_session import CloseOpenSessionsParameters
+from aioaudiobookshelf.schema.session import PlaybackSessionExpanded
 
-from aiohttp import ClientSession
 
+class SessionsClient(BaseClient):
+    """SessionsClient."""
 
-@dataclass(kw_only=True)
-class SessionConfiguration:
-    """Session configuration for abs client."""
+    # get_all_session # admin
+    # delete session
+    # sync local session(s)
 
-    session: ClientSession
-    url: str
-    verify_ssl: bool = True
-    token: str | None = None
-    pagination_items_per_page: int = 10
+    async def get_open_session(self, *, session_id: str) -> PlaybackSessionExpanded:
+        """Get open session."""
+        response = await self._get(f"/api/session/{session_id}")
+        return PlaybackSessionExpanded.from_json(response)
 
-    @property
-    def headers(self) -> dict[str, str]:
-        """Session headers."""
-        if self.token is None:
-            raise RuntimeError("Token not set.")
-        return {"Authorization": f"Bearer {self.token}"}
+    # sync open session
 
-    def __post_init__(self) -> None:
-        """Post init."""
-        self.url = self.url.rstrip("/")
+    async def close_open_session(
+        self, *, session_id: str, parameters: CloseOpenSessionsParameters | None = None
+    ) -> None:
+        """Close open session."""
+        _parameters = {} if parameters is None else parameters.to_dict()
+        await self._post(f"/api/session/{session_id}/close", data=_parameters)

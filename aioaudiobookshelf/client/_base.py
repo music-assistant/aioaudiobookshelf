@@ -1,16 +1,19 @@
 """BaseClient."""
 
 from abc import abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from aioaudiobookshelf.client.session import SessionConfiguration
+if TYPE_CHECKING:
+    from aioaudiobookshelf.client import SessionConfiguration
 from aioaudiobookshelf.schema.calls_login import LoginResponse
 
 
 class BaseClient:
     """Base for clients."""
 
-    def __init__(self, session_config: SessionConfiguration, login_response: LoginResponse) -> None:
+    def __init__(
+        self, session_config: "SessionConfiguration", login_response: LoginResponse
+    ) -> None:
         self.session_config = session_config
         self.user = login_response.user
         if self.session_config.token is None:

@@ -2,8 +2,7 @@
 
 from aiohttp.client_exceptions import ClientResponseError
 
-from aioaudiobookshelf.client import AdminClient, UserClient
-from aioaudiobookshelf.client.session import SessionConfiguration
+from aioaudiobookshelf.client import AdminClient, SessionConfiguration, UserClient
 from aioaudiobookshelf.exceptions import LoginError
 from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
 
