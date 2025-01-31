@@ -5,6 +5,7 @@ from typing import Annotated
 
 from mashumaro.types import Alias
 
+from aioaudiobookshelf.schema.author import AuthorExpanded
 from aioaudiobookshelf.schema.collection import Collection, CollectionExpanded
 from aioaudiobookshelf.schema.playlist import PlaylistExpanded
 from aioaudiobookshelf.schema.series_books import SeriesBooks, SeriesBooksMinified
@@ -86,3 +87,10 @@ class LibraryPlaylistsResponse(_LibraryPaginationResponseBase):
     """LibraryPlaylistsResponse."""
 
     results: list[PlaylistExpanded]
+
+
+@dataclass
+class LibraryAuthorsResponse(_BaseModel):
+    """LibraryAuthorsResponse."""
+
+    authors: list[AuthorExpanded]

@@ -6,8 +6,10 @@ from typing import TypeVar
 from mashumaro.mixins.json import DataClassJSONMixin
 
 from aioaudiobookshelf.client._base import BaseClient
+from aioaudiobookshelf.schema.author import AuthorExpanded
 from aioaudiobookshelf.schema.calls_library import (
     AllLibrariesResponse,
+    LibraryAuthorsResponse,
     LibraryCollectionsMinifiedResponse,
     LibraryCollectionsResponse,
     LibraryItemsMinifiedResponse,
@@ -17,7 +19,7 @@ from aioaudiobookshelf.schema.calls_library import (
     LibrarySeriesResponse,
     LibraryWithFilterDataResponse,
 )
-from aioaudiobookshelf.schema.library import Library
+from aioaudiobookshelf.schema.library import Library, LibraryFilterData
 
 ResponseMinified = TypeVar("ResponseMinified", bound=DataClassJSONMixin)
 ResponseNormal = TypeVar("ResponseNormal", bound=DataClassJSONMixin)
@@ -142,3 +144,22 @@ class LibrariesClient(BaseClient):
             response_cls_minified=LibraryPlaylistsResponse,
         ):
             yield result
+
+    # get library's personalized view
+
+    async def get_library_filterdata(self, *, library_id: str) -> LibraryFilterData:
+        """Get filterdata of library."""
+        response = await self._get(endpoint=f"/api/libraries/{library_id}/filterdata")
+        return LibraryFilterData.from_json(response)
+
+    # search library
+    # get lib stats
+
+    async def get_library_authors(self, *, library_id: str) -> list[AuthorExpanded]:
+        """Get authors of library."""
+        response = await self._get(endpoint=f"/api/libraries/{library_id}/authors")
+        return LibraryAuthorsResponse.from_json(response).authors
+
+    # match lib items
+    # scan lib folders
+    # library recent episodes
