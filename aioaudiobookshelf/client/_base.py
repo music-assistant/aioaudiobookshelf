@@ -51,6 +51,21 @@ class BaseClient:
             return b""
         raise RuntimeError("Response must be json.")
 
+    async def _patch(self, endpoint: str, data: dict[str, Any] | None = None) -> None:
+        """PATCH request to abs api."""
+        await self.session_config.session.patch(
+            endpoint,
+            json=data,
+            ssl=self.session_config.verify_ssl,
+            headers=self.session_config.headers,
+        )
+
+    async def _delete(self, endpoint: str) -> None:
+        """DELETE request to abs api."""
+        await self.session_config.session.delete(
+            endpoint, ssl=self.session_config.verify_ssl, headers=self.session_config.headers
+        )
+
     async def logout(self) -> None:
         """Logout client."""
         await self._post("logout")
