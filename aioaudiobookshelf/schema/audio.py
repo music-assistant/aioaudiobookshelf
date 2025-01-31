@@ -34,8 +34,9 @@ class AudioTrack(_BaseModel):
     duration: float
     title: str
     content_url: Annotated[str, Alias("contentUrl")]
-    mime_type: str
     metadata: FileMetadata | None
+    # is missing if part of library...
+    mime_type: str | None = None
 
 
 @dataclass

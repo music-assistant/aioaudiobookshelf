@@ -12,6 +12,7 @@ from aioaudiobookshelf.schema.calls_library import (
     LibraryCollectionsResponse,
     LibraryItemsMinifiedResponse,
     LibraryItemsResponse,
+    LibraryPlaylistsResponse,
     LibrarySeriesMinifiedResponse,
     LibrarySeriesResponse,
     LibraryWithFilterDataResponse,
@@ -123,5 +124,21 @@ class LibrariesClient(BaseClient):
             minified=minified,
             response_cls=LibraryCollectionsResponse,
             response_cls_minified=LibraryCollectionsMinifiedResponse,
+        ):
+            yield result
+
+    async def get_library_playlists(
+        self, *, library_id: str
+    ) -> AsyncGenerator[LibraryPlaylistsResponse]:
+        """Get collections in that library.
+
+        Returns only minified items at this point.
+        """
+        endpoint = f"/api/libraries/{library_id}/playlists"
+        async for result in self._get_library_with_pagination(
+            endpoint=endpoint,
+            minified=False,  # there is no minified version
+            response_cls=LibraryPlaylistsResponse,
+            response_cls_minified=LibraryPlaylistsResponse,
         ):
             yield result
