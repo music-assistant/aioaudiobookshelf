@@ -8,6 +8,8 @@ from mashumaro.mixins.json import DataClassJSONMixin
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.schema.calls_library import (
     AllLibrariesResponse,
+    LibraryCollectionsMinifiedResponse,
+    LibraryCollectionsResponse,
     LibraryItemsMinifiedResponse,
     LibraryItemsResponse,
     LibrarySeriesMinifiedResponse,
@@ -72,9 +74,7 @@ class LibrariesClient(BaseClient):
     ) -> AsyncGenerator[LibraryItemsResponse | LibraryItemsMinifiedResponse]:
         """Get library items.
 
-        There are a couple of options to this API call. Currently, collapseseries is set to False,
-        and other parameters than minified are not supported. Pagination is applied according to
-        SessionConfiguration of client.
+        Returns only minified items at this point.
         """
         # only minified response is supported at API
         minified: bool = True
@@ -95,7 +95,7 @@ class LibrariesClient(BaseClient):
     ) -> AsyncGenerator[LibrarySeriesMinifiedResponse | LibrarySeriesResponse]:
         """Get series in that library.
 
-        There are a couple of options to this API call. Only limited API calls supported
+        Returns only minified items at this point.
         """
         # only minified response is supported
         minified: bool = True
@@ -105,5 +105,23 @@ class LibrariesClient(BaseClient):
             minified=minified,
             response_cls=LibrarySeriesResponse,
             response_cls_minified=LibrarySeriesMinifiedResponse,
+        ):
+            yield result
+
+    async def get_library_collections(
+        self, *, library_id: str
+    ) -> AsyncGenerator[LibraryCollectionsMinifiedResponse | LibraryCollectionsResponse]:
+        """Get collections in that library.
+
+        Returns only minified items at this point.
+        """
+        # only minified response is supported
+        minified: bool = True
+        endpoint = f"/api/libraries/{library_id}/collections"
+        async for result in self._get_library_with_pagination(
+            endpoint=endpoint,
+            minified=minified,
+            response_cls=LibraryCollectionsResponse,
+            response_cls_minified=LibraryCollectionsMinifiedResponse,
         ):
             yield result
