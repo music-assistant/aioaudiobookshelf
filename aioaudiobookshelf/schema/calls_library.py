@@ -5,6 +5,8 @@ from typing import Annotated
 
 from mashumaro.types import Alias
 
+from aioaudiobookshelf.schema.series_books import SeriesBooks, SeriesBooksMinified
+
 from . import _BaseModel
 from .library import Library, LibraryFilterData, LibraryItem, LibraryItemMinified
 
@@ -27,7 +29,7 @@ class LibraryWithFilterDataResponse(_BaseModel):
 
 
 @dataclass
-class _LibraryItemsResponseBase(_BaseModel):
+class _LibraryPaginationResponseBase(_BaseModel):
     """Due to options of this API call, some parameters omitted."""
 
     total: int
@@ -36,14 +38,28 @@ class _LibraryItemsResponseBase(_BaseModel):
 
 
 @dataclass
-class LibraryItemsMinifiedResponse(_LibraryItemsResponseBase):
+class LibraryItemsMinifiedResponse(_LibraryPaginationResponseBase):
     """LibraryItemsMinifiedResponse."""
 
     results: list[LibraryItemMinified]
 
 
 @dataclass
-class LibraryItemsResponse(_LibraryItemsResponseBase):
+class LibraryItemsResponse(_LibraryPaginationResponseBase):
     """LibraryItemsResponse."""
 
     results: list[LibraryItem]
+
+
+@dataclass
+class LibrarySeriesResponse(_LibraryPaginationResponseBase):
+    """LibrarySeriesResponse."""
+
+    results: list[SeriesBooks]
+
+
+@dataclass
+class LibrarySeriesMinifiedResponse(_LibraryPaginationResponseBase):
+    """LibrarySeriesMinifiedResponse."""
+
+    results: list[SeriesBooksMinified]

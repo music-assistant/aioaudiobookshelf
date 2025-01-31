@@ -39,18 +39,6 @@ class SeriesNumBooks(_SeriesBase):
 
 
 @dataclass
-class SeriesBooks(_SeriesBase):
-    """SeriesBooks."""
-
-    added_at: Annotated[int, Alias("addedAt")]  # ms epoch
-    name_ignore_prefix: Annotated[str, Alias("nameIgnorePrefix")]
-    name_ignore_prefix_sort: Annotated[str, Alias("nameIgnorePrefixSort")]
-    type_: Annotated[str, Alias("type")]
-    # books: list[LibraryItemBookSeries]
-    total_duration: Annotated[float, Alias("totalDuration")]  # s
-
-
-@dataclass
 class SeriesSequence(_SeriesBase):
     """Series Sequence."""
 

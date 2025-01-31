@@ -1,15 +1,23 @@
 """Calls to /api/libraries."""
 
 from collections.abc import AsyncGenerator
+from typing import TypeVar
+
+from mashumaro.mixins.json import DataClassJSONMixin
 
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.schema.calls_library import (
     AllLibrariesResponse,
     LibraryItemsMinifiedResponse,
     LibraryItemsResponse,
+    LibrarySeriesMinifiedResponse,
+    LibrarySeriesResponse,
     LibraryWithFilterDataResponse,
 )
 from aioaudiobookshelf.schema.library import Library
+
+ResponseMinified = TypeVar("ResponseMinified", bound=DataClassJSONMixin)
+ResponseNormal = TypeVar("ResponseNormal", bound=DataClassJSONMixin)
 
 
 class LibrariesClient(BaseClient):
@@ -37,11 +45,30 @@ class LibrariesClient(BaseClient):
     # update library
     # delete library
 
-    async def get_library_items(
+    async def _get_library_with_pagination(
         self,
         *,
-        library_id: str,
-        minified: bool = True,
+        endpoint: str,
+        minified: bool = False,
+        response_cls_minified: type[ResponseMinified],
+        response_cls: type[ResponseNormal],
+    ) -> AsyncGenerator[ResponseMinified | ResponseNormal]:
+        page_cnt = 0
+        params: dict[str, int | str] = {
+            "minified": int(minified),
+            "limit": self.session_config.pagination_items_per_page,
+        }
+        while True:
+            params["page"] = page_cnt
+            response = await self._get(endpoint, params)
+            page_cnt += 1
+            if minified:
+                yield response_cls_minified.from_json(response)
+            else:
+                yield response_cls.from_json(response)
+
+    async def get_library_items(
+        self, *, library_id: str
     ) -> AsyncGenerator[LibraryItemsResponse | LibraryItemsMinifiedResponse]:
         """Get library items.
 
@@ -49,20 +76,34 @@ class LibrariesClient(BaseClient):
         and other parameters than minified are not supported. Pagination is applied according to
         SessionConfiguration of client.
         """
-        page_cnt = 0
-        params: dict[str, int | str] = {
-            "minified": int(minified),
-            "limit": self.session_config.pagination_items_per_page,
-            "collapseseries": 0,
-        }
-        while True:
-            params["page"] = page_cnt
-            endpoint = f"/api/libraries/{library_id}/items"
-            response = await self._get(endpoint, params)
-            page_cnt += 1
-            if minified:
-                yield LibraryItemsMinifiedResponse.from_json(response)
-            else:
-                yield LibraryItemsResponse.from_json(response)
+        # only minified response is supported at API
+        minified: bool = True
+        endpoint = f"/api/libraries/{library_id}/items"
+        async for result in self._get_library_with_pagination(
+            endpoint=endpoint,
+            minified=minified,
+            response_cls_minified=LibraryItemsMinifiedResponse,
+            response_cls=LibraryItemsResponse,
+        ):
+            yield result
 
     # remove item with issues
+    # get lib podcast episode downloads
+
+    async def get_library_series(
+        self, *, library_id: str
+    ) -> AsyncGenerator[LibrarySeriesMinifiedResponse | LibrarySeriesResponse]:
+        """Get series in that library.
+
+        There are a couple of options to this API call. Only limited API calls supported
+        """
+        # only minified response is supported
+        minified: bool = True
+        endpoint = f"/api/libraries/{library_id}/series"
+        async for result in self._get_library_with_pagination(
+            endpoint=endpoint,
+            minified=minified,
+            response_cls=LibrarySeriesResponse,
+            response_cls_minified=LibrarySeriesMinifiedResponse,
+        ):
+            yield result
