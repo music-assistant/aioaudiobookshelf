@@ -117,7 +117,8 @@ class LibraryItem(_LibraryItemBase):
             include_subtypes=True,
         )
 
-    last_scan: Annotated[int | None, Alias("lastScan")]  # ms epoch
+    # this is missing sometimes, and we don't need it yet.
+    # last_scan: Annotated[int | None, Alias("lastScan")]  # ms epoch
     scan_version: Annotated[str | None, Alias("scanVersion")]
     library_files: Annotated[list[LibraryFile], Alias("libraryFiles")]
 

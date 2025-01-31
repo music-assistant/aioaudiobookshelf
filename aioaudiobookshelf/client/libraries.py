@@ -163,3 +163,4 @@ class LibrariesClient(BaseClient):
     # match lib items
     # scan lib folders
     # library recent episodes
+    # reorder list
