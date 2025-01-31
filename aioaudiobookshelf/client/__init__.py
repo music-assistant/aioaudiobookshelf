@@ -3,11 +3,12 @@
 from aioaudiobookshelf.exceptions import BadUserError
 from aioaudiobookshelf.schema.user import UserType
 
+from .collections_ import CollectionsClient
 from .items import ItemsClient
 from .libraries import LibrariesClient
 
 
-class UserClient(LibrariesClient, ItemsClient):
+class UserClient(LibrariesClient, ItemsClient, CollectionsClient):
     """Client which uses endpoints accessible to a user."""
 
     def _verify_user(self) -> None:
