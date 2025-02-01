@@ -7,3 +7,7 @@ class BadUserError(Exception):
 
 class LoginError(Exception):
     """Exception raised if login failed."""
+
+
+class ApiError(Exception):
+    """Exception raised if call to api failed."""
