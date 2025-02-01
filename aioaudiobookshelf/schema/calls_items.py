@@ -9,7 +9,7 @@ from aioaudiobookshelf.schema import _BaseModel
 from aioaudiobookshelf.schema.session import DeviceInfo
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PlayParameters(_BaseModel):
     """PlayParameters.
 

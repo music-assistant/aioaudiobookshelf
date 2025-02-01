@@ -12,7 +12,7 @@ from .book import BookChapter, BookMetadata
 from .podcast import PodcastMetadata
 
 
-@dataclass
+@dataclass(kw_only=True)
 class DeviceInfo(_BaseModel):
     """DeviceInfo. No variants.
 
@@ -38,15 +38,15 @@ class PlaybackMethod(Enum):
     LOCAL = 3
 
 
-@dataclass
-class _PlaybackSessionBase(_BaseModel):
+@dataclass(kw_only=True)
+class PlaybackSession(_BaseModel):
     """PlaybackSession."""
 
     id_: Annotated[str, Alias("id")]
     user_id: Annotated[str, Alias("userId")]
     library_id: Annotated[str, Alias("libraryId")]
     library_item_id: Annotated[str, Alias("libraryItemId")]
-    episode_id: Annotated[str | None, Alias("episodeId")]
+    episode_id: Annotated[str | None, Alias("episodeId")] = None
     media_type: Annotated[str, Alias("mediaType")]
     media_metadata: Annotated[PodcastMetadata | BookMetadata, Alias("mediaMetadata")]
     display_title: Annotated[str, Alias("displayTitle")]
@@ -66,20 +66,13 @@ class _PlaybackSessionBase(_BaseModel):
     current_time: Annotated[float, Alias("currentTime")]  # s
     started_at: Annotated[int, Alias("startedAt")]  # ms since Unix Epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms since Unix Epoch
-
-
-@dataclass
-class PlaybackSession(_PlaybackSessionBase):
-    """PlaybackSession."""
-
     chapters: list[BookChapter] = field(default_factory=list)
 
 
-@dataclass
-class PlaybackSessionExpanded(_PlaybackSessionBase):
+@dataclass(kw_only=True)
+class PlaybackSessionExpanded(PlaybackSession):
     """PlaybackSessionExpanded."""
 
     audio_tracks: Annotated[list[AudioTrack], Alias("audioTracks")]
-    chapters: list[BookChapter] = field(default_factory=list)
     # videoTrack
     # libraryItem

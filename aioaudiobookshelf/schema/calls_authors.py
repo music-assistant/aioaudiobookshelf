@@ -10,7 +10,7 @@ from .author import Author
 from .library import LibraryItemMinified
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AuthorSeries(_BaseModel):
     """AuthorSeries."""
 
@@ -19,14 +19,14 @@ class AuthorSeries(_BaseModel):
     items: list[LibraryItemMinified]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AuthorWithItems(Author):
     """AuthorWithItems."""
 
     library_items: Annotated[list[LibraryItemMinified], Alias("libraryItems")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AuthorWithItemsAndSeries(AuthorWithItems):
     """AuthorWithItemsAndSeries."""
 

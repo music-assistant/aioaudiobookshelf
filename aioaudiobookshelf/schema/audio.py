@@ -9,7 +9,7 @@ from . import _BaseModel
 from .file import FileMetadata
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AudioBookmark(_BaseModel):
     """AudioBookmark. No variants.
 
@@ -22,7 +22,7 @@ class AudioBookmark(_BaseModel):
     created_at: Annotated[int, Alias("createdAt")]  # unix epoch ms
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AudioTrack(_BaseModel):
     """ABS audioTrack. No variants.
 
@@ -39,7 +39,7 @@ class AudioTrack(_BaseModel):
     mime_type: str | None = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AudioFile(_BaseModel):
     """Audiofile."""
 
@@ -48,22 +48,22 @@ class AudioFile(_BaseModel):
     metadata: FileMetadata
     added_at: Annotated[int, Alias("addedAt")]
     updated_at: Annotated[int, Alias("updatedAt")]
-    track_num_from_meta: Annotated[int | None, Alias("trackNumFromMeta")]
-    disc_num_from_meta: Annotated[int | None, Alias("discNumFromMeta")]
-    track_num_from_filename: Annotated[int | None, Alias("trackNumFromFilename")]
-    disc_num_from_filename: Annotated[int | None, Alias("discNumFromFilename")]
+    track_num_from_meta: Annotated[int | None, Alias("trackNumFromMeta")] = None
+    disc_num_from_meta: Annotated[int | None, Alias("discNumFromMeta")] = None
+    track_num_from_filename: Annotated[int | None, Alias("trackNumFromFilename")] = None
+    disc_num_from_filename: Annotated[int | None, Alias("discNumFromFilename")] = None
     manually_verified: Annotated[bool, Alias("manuallyVerified")]
     exclude: bool
-    error: str | None
+    error: str | None = None
     format: str
     duration: float
     bit_rate: Annotated[int, Alias("bitRate")]
-    language: str | None
+    language: str | None = None
     codec: str
     time_base: Annotated[str, Alias("timeBase")]
     channels: int
     channel_layout: Annotated[str, Alias("channelLayout")]
-    embedded_cover_art: Annotated[str | None, Alias("embeddedCoverArt")]
+    embedded_cover_art: Annotated[str | None, Alias("embeddedCoverArt")] = None
     mime_type: Annotated[str, Alias("mimeType")]
     # if part of a book
     # chapters: list[BookChapter]

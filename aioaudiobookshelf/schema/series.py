@@ -8,7 +8,7 @@ from mashumaro.types import Alias
 from . import _BaseModel
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _SeriesBase(_BaseModel):
     """_SeriesBase."""
 
@@ -20,16 +20,16 @@ class _SeriesBase(_BaseModel):
 SeriesFilterData = _SeriesBase
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Series(_SeriesBase):
     """Series."""
 
-    description: str | None
+    description: str | None = None
     added_at: Annotated[int, Alias("addedAt")]  # ms epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms epoch
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SeriesNumBooks(_SeriesBase):
     """SeriesNumBooks."""
 
@@ -38,8 +38,8 @@ class SeriesNumBooks(_SeriesBase):
     num_books: Annotated[int, Alias("numBooks")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SeriesSequence(_SeriesBase):
     """Series Sequence."""
 
-    sequence: str | None
+    sequence: str | None = None

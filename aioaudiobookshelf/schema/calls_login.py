@@ -10,7 +10,7 @@ from .server import ServerSettings
 from .user import User
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LoginParameters(DataClassJSONMixin):
     """Login params."""
 
@@ -18,7 +18,7 @@ class LoginParameters(DataClassJSONMixin):
     password: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LoginResponse(DataClassJSONMixin):
     """Response to login request."""
 

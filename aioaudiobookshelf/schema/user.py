@@ -11,7 +11,7 @@ from .audio import AudioBookmark
 from .media_progress import MediaProgress
 
 
-@dataclass
+@dataclass(kw_only=True)
 class UserPermissions(_BaseModel):
     """UserPermissions. No variants.
 
@@ -36,7 +36,7 @@ class UserType(StrEnum):
     ADMIN = "admin"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _UserBase(_BaseModel):
     """Shared attributes for User.
 
@@ -48,7 +48,7 @@ class _UserBase(_BaseModel):
     type_: Annotated[UserType, Alias("type")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class User(_UserBase):
     """User."""
 
@@ -61,11 +61,13 @@ class User(_UserBase):
     bookmarks: list[AudioBookmark]
     is_active: Annotated[bool, Alias("isActive")]
     is_locked: Annotated[bool, Alias("isLocked")]
-    last_seen: Annotated[int | None, Alias("lastSeen")]
+    last_seen: Annotated[int | None, Alias("lastSeen")] = None
     created_at: Annotated[int, Alias("createdAt")]
     permissions: UserPermissions
     # empty = all accessible
-    libraries_accessible: Annotated[list[str], Alias("librariesAccessible")]
+    libraries_accessible: Annotated[list[str], Alias("librariesAccessible")] = field(
+        default_factory=list
+    )
 
     # is apparently omitted if empty
     # empty = all accessible

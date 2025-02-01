@@ -9,27 +9,27 @@ from . import _BaseModel
 from .library import LibraryItemBook, LibraryItemExpandedBook
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _CollectionBase(_BaseModel):
     """_CollectionBase."""
 
     id_: Annotated[str, Alias("id")]
     library_id: Annotated[str, Alias("libraryId")]
-    # user_id: Annotated[str, Alias("userId")]
+    user_id: Annotated[str | None, Alias("userId")] = None
     name: str
-    description: str | None
+    description: str | None = None
     last_update: Annotated[int, Alias("lastUpdate")]  # ms epoch
     created_at: Annotated[int, Alias("createdAt")]  # ms epoch
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Collection(_CollectionBase):
     """Collection."""
 
     books: list[LibraryItemBook]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CollectionExpanded(_CollectionBase):
     """Collection."""
 

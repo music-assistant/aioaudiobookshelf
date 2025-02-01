@@ -8,7 +8,7 @@ from mashumaro.types import Alias
 from . import _BaseModel
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Folder(_BaseModel):
     """Folder."""
 

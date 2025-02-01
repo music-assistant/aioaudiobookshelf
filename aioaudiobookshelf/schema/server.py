@@ -44,7 +44,7 @@ class ServerLogLevel(Enum):
     WARNING = 3
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ServerSettings(_BaseModel):
     """ServerSettings."""
 

@@ -8,7 +8,7 @@ from mashumaro.types import Alias
 from . import _BaseModel
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AuthorMinified(_BaseModel):
     """AuthorMinified.
 
@@ -19,18 +19,18 @@ class AuthorMinified(_BaseModel):
     name: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Author(AuthorMinified):
     """Author."""
 
-    asin: str | None
-    description: str | None
-    image_path: Annotated[str | None, Alias("imagePath")]
+    asin: str | None = None
+    description: str | None = None
+    image_path: Annotated[str | None, Alias("imagePath")] = None
     added_at: Annotated[int, Alias("addedAt")]  # ms epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms epoch
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AuthorExpanded(Author):
     """ABSAuthorExpanded."""
 

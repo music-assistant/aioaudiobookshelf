@@ -9,37 +9,37 @@ from . import _BaseModel
 from .audio import AudioFile, AudioTrack
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PodcastMetadata(_BaseModel):
     """PodcastMetadata."""
 
-    title: str | None
-    author: str | None
-    description: str | None
-    release_date: Annotated[str | None, Alias("releaseDate")]
+    title: str | None = None
+    author: str | None = None
+    description: str | None = None
+    release_date: Annotated[str | None, Alias("releaseDate")] = None
     genres: list[str]
-    feed_url: Annotated[str | None, Alias("feedUrl")]
-    image_url: Annotated[str | None, Alias("imageUrl")]
-    itunes_page_url: Annotated[str | None, Alias("itunesPageUrl")]
-    itunes_id: Annotated[int | None, Alias("itunesId")]
+    feed_url: Annotated[str | None, Alias("feedUrl")] = None
+    image_url: Annotated[str | None, Alias("imageUrl")] = None
+    itunes_page_url: Annotated[str | None, Alias("itunesPageUrl")] = None
+    itunes_id: Annotated[int | None, Alias("itunesId")] = None
     # str: is not documented
-    itunes_artist_id: Annotated[int | str | None, Alias("itunesArtistId")]
+    itunes_artist_id: Annotated[int | str | None, Alias("itunesArtistId")] = None
     explicit: bool
-    language: str | None
-    type_: Annotated[str | None, Alias("type")]
+    language: str | None = None
+    type_: Annotated[str | None, Alias("type")] = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PodcastMetadataMinified(PodcastMetadata):
     """PodcastMetadataMinified."""
 
-    title_ignore_prefix: Annotated[str | None, Alias("titleIgnorePrefix")]
+    title_ignore_prefix: Annotated[str | None, Alias("titleIgnorePrefix")] = None
 
 
 PodcastMetaDataExpanded = PodcastMetadataMinified
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PodcastEpisodeEnclosure(_BaseModel):
     """PodcastEpisodeEnclosure."""
 
@@ -48,13 +48,13 @@ class PodcastEpisodeEnclosure(_BaseModel):
     length: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _PodcastEpisodeBase(_BaseModel):
     """PodcastEpisode."""
 
     library_item_id: Annotated[str, Alias("libraryItemId")]
     id_: Annotated[str, Alias("id")]
-    index: int | None
+    index: int | None = None
     season: str
     episode: str
     episode_type: Annotated[str, Alias("episodeType")]
@@ -62,48 +62,44 @@ class _PodcastEpisodeBase(_BaseModel):
     subtitle: str
     description: str
     pub_date: Annotated[str, Alias("pubDate")]
-    published_at: Annotated[int | None, Alias("publishedAt")]  # ms posix epoch
+    published_at: Annotated[int | None, Alias("publishedAt")] = None  # ms posix epoch
     added_at: Annotated[int, Alias("addedAt")]  # ms posix epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms posix epoch
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PodcastEpisode(_PodcastEpisodeBase):
     """PodcastEpisode."""
 
-    # might be missing in playlists
     audio_file: AudioFile | None = None
-    # might be missing if manually added
     enclosure: PodcastEpisodeEnclosure | None = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PodcastEpisodeExpanded(_PodcastEpisodeBase):
     """PodcastEpisodeExpanded."""
 
     audio_track: Annotated[AudioTrack, Alias("audioTrack")]
     duration: float
     size: int
-    # might be missing in playlists
     audio_file: AudioFile | None = None
-    # might be missing if manually added
     enclosure: PodcastEpisodeEnclosure | None = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _PodcastBase(_BaseModel):
     """_PodcastBase."""
 
-    cover_path: Annotated[str | None, Alias("coverPath")]
+    cover_path: Annotated[str | None, Alias("coverPath")] = None
     auto_download_episodes: Annotated[bool, Alias("autoDownloadEpisodes")]
     auto_download_schedule: Annotated[str, Alias("autoDownloadSchedule")]
     # None is not documented
-    last_episode_check_ms: Annotated[int | None, Alias("lastEpisodeCheck")]
+    last_episode_check_ms: Annotated[int | None, Alias("lastEpisodeCheck")] = None
     max_episodes_to_keep: Annotated[int, Alias("maxEpisodesToKeep")]  # 0 = all
     max_new_episodes_to_download: Annotated[int, Alias("maxNewEpisodesToDownload")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Podcast(_PodcastBase):
     """ABSPodcast."""
 
@@ -113,7 +109,7 @@ class Podcast(_PodcastBase):
     episodes: list[PodcastEpisode]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PodcastMinified(_PodcastBase):
     """ABSPodcastMinified."""
 
@@ -122,7 +118,7 @@ class PodcastMinified(_PodcastBase):
     num_episodes: Annotated[int, Alias("numEpisodes")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class PodcastExpanded(_PodcastBase):
     """PodcastEpisodeExpanded."""
 

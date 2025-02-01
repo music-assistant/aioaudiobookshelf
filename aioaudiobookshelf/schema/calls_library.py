@@ -14,14 +14,14 @@ from . import _BaseModel
 from .library import Library, LibraryFilterData, LibraryItem, LibraryItemMinified
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AllLibrariesResponse(_BaseModel):
     """LibrariesResponse."""
 
     libraries: list[Library]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryWithFilterDataResponse(_BaseModel):
     """LibraryWithFilterDataResponse."""
 
@@ -31,7 +31,7 @@ class LibraryWithFilterDataResponse(_BaseModel):
     library: Library
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _LibraryPaginationResponseBase(_BaseModel):
     """Due to options of this API call, some parameters omitted."""
 
@@ -40,56 +40,56 @@ class _LibraryPaginationResponseBase(_BaseModel):
     page: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemsMinifiedResponse(_LibraryPaginationResponseBase):
     """LibraryItemsMinifiedResponse."""
 
     results: list[LibraryItemMinified]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemsResponse(_LibraryPaginationResponseBase):
     """LibraryItemsResponse."""
 
     results: list[LibraryItem]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibrarySeriesResponse(_LibraryPaginationResponseBase):
     """LibrarySeriesResponse."""
 
     results: list[SeriesBooks]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibrarySeriesMinifiedResponse(_LibraryPaginationResponseBase):
     """LibrarySeriesMinifiedResponse."""
 
     results: list[SeriesBooksMinified]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryCollectionsResponse(_LibraryPaginationResponseBase):
     """LibraryCollectionsResponse."""
 
     results: list[CollectionExpanded]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryCollectionsMinifiedResponse(_LibraryPaginationResponseBase):
     """LibraryCollectionMinifiedResponse."""
 
     results: list[Collection]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryPlaylistsResponse(_LibraryPaginationResponseBase):
     """LibraryPlaylistsResponse."""
 
     results: list[PlaylistExpanded]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryAuthorsResponse(_BaseModel):
     """LibraryAuthorsResponse."""
 

@@ -9,7 +9,7 @@ from . import _BaseModel
 from .series import Series
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SeriesProgress(_BaseModel):
     """SeriesProgress."""
 
@@ -18,7 +18,7 @@ class SeriesProgress(_BaseModel):
     is_finished: Annotated[bool, Alias("isFinished")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SeriesWithProgress(Series):
     """SeriesWithProgress."""
 

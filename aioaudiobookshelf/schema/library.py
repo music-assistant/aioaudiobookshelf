@@ -24,17 +24,17 @@ class LibraryIcons(StrEnum):
 
     DATABASE = "database"
     AUDIOBOOKSHELF = "audiobookshelf"
-    BOOKS_1 = "books-1"
-    BOOKS_2 = "books-2"
-    BOOK_1 = "book-1"
-    MICROPHONE_1 = "microphone-1"
-    MICROPHONE_3 = "microphone-3"
+    BOOKS1 = "books-1"
+    BOOKS2 = "books-2"
+    BOOK1 = "book-1"
+    MICROPHONE1 = "microphone-1"
+    MICROPHONE3 = "microphone-3"
     RADIO = "radio"
     PODCAST = "podcast"
     RSS = "rss"
     HEADPHONES = "headphones"
     MUSIC = "music"
-    FILE_PICTURE = "file-picture"
+    FILEPICTURE = "file-picture"
     ROCKET = "rocket"
     POWER = "power"
     START = "star"
@@ -48,7 +48,7 @@ class LibraryMediaType(StrEnum):
     PODCAST = "podcast"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryFile(_BaseModel):
     """LibraryFile."""
 
@@ -59,7 +59,7 @@ class LibraryFile(_BaseModel):
     file_type: Annotated[str, Alias("fileType")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibrarySettings(_BaseModel):
     """LibrarySettings."""
 
@@ -67,10 +67,10 @@ class LibrarySettings(_BaseModel):
     disable_watcher: Annotated[bool, Alias("disableWatcher")]
     skip_matching_media_with_asin: Annotated[bool, Alias("skipMatchingMediaWithAsin")]
     skip_matching_media_with_isbn: Annotated[bool, Alias("skipMatchingMediaWithIsbn")]
-    auto_scan_cron_expression: Annotated[str | None, Alias("autoScanCronExpression")]
+    auto_scan_cron_expression: Annotated[str | None, Alias("autoScanCronExpression")] = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Library(_BaseModel):
     """Library."""
 
@@ -87,7 +87,7 @@ class Library(_BaseModel):
     last_update: Annotated[int, Alias("lastUpdate")]  # ms epoch
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _LibraryItemBase(_BaseModel):
     id_: Annotated[str, Alias("id")]
     ino: str
@@ -105,7 +105,7 @@ class _LibraryItemBase(_BaseModel):
     is_invalid: Annotated[bool, Alias("isInvalid")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItem(_LibraryItemBase):
     """LibraryItem."""
 
@@ -117,13 +117,12 @@ class LibraryItem(_LibraryItemBase):
             include_subtypes=True,
         )
 
-    # this is missing sometimes, and we don't need it yet.
-    # last_scan: Annotated[int | None, Alias("lastScan")]  # ms epoch
-    scan_version: Annotated[str | None, Alias("scanVersion")]
+    last_scan: Annotated[int | None, Alias("lastScan")] = None  # ms epoch
+    scan_version: Annotated[str | None, Alias("scanVersion")] = None
     library_files: Annotated[list[LibraryFile], Alias("libraryFiles")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemBook(LibraryItem):
     """LibraryItemBook."""
 
@@ -131,7 +130,7 @@ class LibraryItemBook(LibraryItem):
     mediaType: LibraryMediaType = LibraryMediaType.BOOK
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemPodcast(LibraryItem):
     """LibraryItemPodcast."""
 
@@ -139,7 +138,7 @@ class LibraryItemPodcast(LibraryItem):
     mediaType: LibraryMediaType = LibraryMediaType.PODCAST
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemMinified(_LibraryItemBase):
     """LibraryItemMinified."""
 
@@ -155,7 +154,7 @@ class LibraryItemMinified(_LibraryItemBase):
     size: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemMinifiedBook(LibraryItemMinified):
     """LibraryItemMinifiedBook."""
 
@@ -167,7 +166,7 @@ class LibraryItemMinifiedBook(LibraryItemMinified):
     # )
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemMinifiedPodcast(LibraryItemMinified):
     """LibraryItemMinifiedPodcast."""
 
@@ -179,7 +178,7 @@ class LibraryItemMinifiedPodcast(LibraryItemMinified):
     # )
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemExpanded(LibraryItem):
     """LibraryItemExpanded."""
 
@@ -194,7 +193,7 @@ class LibraryItemExpanded(LibraryItem):
     size: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemExpandedBook(LibraryItemExpanded):
     """LibraryItemExpandedBook."""
 
@@ -202,7 +201,7 @@ class LibraryItemExpandedBook(LibraryItemExpanded):
     mediaType: LibraryMediaType = LibraryMediaType.BOOK
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryItemExpandedPodcast(LibraryItemExpanded):
     """LibraryItemExpandedPodcast."""
 
@@ -210,7 +209,7 @@ class LibraryItemExpandedPodcast(LibraryItemExpanded):
     mediaType: LibraryMediaType = LibraryMediaType.PODCAST
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LibraryFilterData(_BaseModel):
     """LibraryFilterData."""
 

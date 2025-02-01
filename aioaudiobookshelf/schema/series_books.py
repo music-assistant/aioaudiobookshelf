@@ -9,7 +9,7 @@ from .library import LibraryItemBook, LibraryItemMinifiedBook
 from .series import _SeriesBase
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _SeriesBooksBase(_SeriesBase):
     """SeriesBooks."""
 
@@ -20,14 +20,14 @@ class _SeriesBooksBase(_SeriesBase):
     total_duration: Annotated[float, Alias("totalDuration")]  # s
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SeriesBooks(_SeriesBooksBase):
     """SeriesBooks."""
 
     books: list[LibraryItemBook]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SeriesBooksMinified(_SeriesBase):
     """SeriesBooks."""
 

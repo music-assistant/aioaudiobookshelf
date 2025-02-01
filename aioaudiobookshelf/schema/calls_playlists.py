@@ -7,7 +7,7 @@ from aioaudiobookshelf.schema.playlist import PlaylistExpanded
 from . import _BaseModel
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AllPlaylistsResponse(_BaseModel):
     """AllPlaylistsResponse."""
 

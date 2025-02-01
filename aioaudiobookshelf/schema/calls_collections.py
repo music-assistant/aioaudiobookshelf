@@ -7,7 +7,7 @@ from aioaudiobookshelf.schema.collection import CollectionExpanded
 from . import _BaseModel
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AllCollectionsResponse(_BaseModel):
     """AllCollectionsResponse."""
 

@@ -12,7 +12,7 @@ from .file import FileMetadata
 from .series import SeriesSequence
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EBookFile(_BaseModel):
     """EBookFile."""
 
@@ -23,7 +23,7 @@ class EBookFile(_BaseModel):
     updated_at: Annotated[int, Alias("updatedAt")]  # time in ms since unix epoch
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BookChapter(_BaseModel):
     """
     BookChapter. No variants.
@@ -37,24 +37,24 @@ class BookChapter(_BaseModel):
     title: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _BookMetadataBase(_BaseModel):
     """_BookMetadataBase."""
 
-    title: str | None
-    subtitle: str | None
+    title: str | None = None
+    subtitle: str | None = None
     genres: list[str]
-    published_year: Annotated[str | None, Alias("publishedYear")]
-    published_date: Annotated[str | None, Alias("publishedDate")]
-    publisher: str | None
-    description: str | None
-    isbn: str | None
-    asin: str | None
-    language: str | None
+    published_year: Annotated[str | None, Alias("publishedYear")] = None
+    published_date: Annotated[str | None, Alias("publishedDate")] = None
+    publisher: str | None = None
+    description: str | None = None
+    isbn: str | None = None
+    asin: str | None = None
+    language: str | None = None
     explicit: bool
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BookMetadata(_BookMetadataBase):
     """BookMetadata."""
 
@@ -63,7 +63,7 @@ class BookMetadata(_BookMetadataBase):
     series: list[SeriesSequence]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BookMetadataMinified(_BookMetadataBase):
     """BookMetadataMinified."""
 
@@ -74,20 +74,20 @@ class BookMetadataMinified(_BookMetadataBase):
     series_name: Annotated[str, Alias("seriesName")]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BookMetadataExpanded(BookMetadata, BookMetadataMinified):
     """BookMetadataExpanded."""
 
 
-@dataclass
+@dataclass(kw_only=True)
 class _BookBase(_BaseModel):
     """_BookBase."""
 
     tags: list[str]
-    cover_path: Annotated[str | None, Alias("coverPath")]
+    cover_path: Annotated[str | None, Alias("coverPath")] = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Book(_BookBase):
     """Book."""
 
@@ -95,10 +95,10 @@ class Book(_BookBase):
     metadata: BookMetadata
     audio_files: Annotated[list[AudioFile], Alias("audioFiles")]
     chapters: list[BookChapter]
-    ebook_file: Annotated[EBookFile | None, Alias("ebookFile")]
+    ebook_file: Annotated[EBookFile | None, Alias("ebookFile")] = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BookMinified(_BookBase):
     """BookMinified."""
 
@@ -108,11 +108,10 @@ class BookMinified(_BookBase):
     num_chapters: Annotated[int, Alias("numChapters")]
     duration: float  # in s
     size: int  # in bytes
-    # not set if missing
     ebook_format: Annotated[str | None, Alias("ebookFormat")] = None
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BookExpanded(_BookBase):
     """BookExpanded."""
 
@@ -120,7 +119,7 @@ class BookExpanded(_BookBase):
     metadata: BookMetadataExpanded
     audio_files: Annotated[list[AudioFile], Alias("audioFiles")]
     chapters: list[BookChapter]
-    ebook_file: Annotated[EBookFile | None, Alias("ebookFile")]
+    ebook_file: Annotated[EBookFile | None, Alias("ebookFile")] = None
     duration: float
     size: int  # bytes
     tracks: list[AudioTrack]

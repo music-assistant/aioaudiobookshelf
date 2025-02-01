@@ -10,7 +10,7 @@ from aioaudiobookshelf.schema.session import PlaybackSession
 from . import _BaseModel
 
 
-@dataclass
+@dataclass(kw_only=True)
 class MeListeningSessionsParameters(_BaseModel):
     """MeListeningSessionsParameters."""
 
@@ -18,7 +18,7 @@ class MeListeningSessionsParameters(_BaseModel):
     page: int = 0
 
 
-@dataclass
+@dataclass(kw_only=True)
 class MeListeningSessionsResponse(_BaseModel):
     """MeListeningSessionsResponse."""
 
