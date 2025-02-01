@@ -15,7 +15,14 @@ class SessionClient(BaseClient):
     async def get_open_session(self, *, session_id: str) -> PlaybackSessionExpanded:
         """Get open session."""
         response = await self._get(f"/api/session/{session_id}")
-        return PlaybackSessionExpanded.from_json(response)
+        psession = PlaybackSessionExpanded.from_json(response)
+        self.logger.debug(
+            "Got playback session %s for %s named %s.",
+            psession.id_,
+            psession.media_type,
+            psession.display_title,
+        )
+        return psession
 
     # sync open session
 
@@ -24,4 +31,5 @@ class SessionClient(BaseClient):
     ) -> None:
         """Close open session."""
         _parameters = {} if parameters is None else parameters.to_dict()
+        self.logger.debug("Closing playback session %s.", session_id)
         await self._post(f"/api/session/{session_id}/close", data=_parameters)

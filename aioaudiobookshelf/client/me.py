@@ -77,6 +77,7 @@ class MeClient(BaseClient):
             data={"isFinished": is_finished},
         )
         if is_finished:
+            self.logger.debug("Marked played: %s", endpoint)
             return
         percentage = progress_seconds / duration_seconds
         await self._patch(
@@ -87,6 +88,7 @@ class MeClient(BaseClient):
             endpoint,
             data={"duration": duration_seconds, "currentTime": progress_seconds},
         )
+        self.logger.debug("Updated to %.0f %", percentage * 100)
 
     async def remove_my_media_progress(self, *, media_progress_id: str) -> None:
         """Remove a single media progress."""

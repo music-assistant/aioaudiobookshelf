@@ -1,5 +1,6 @@
 """Clients for Audiobookshelf."""
 
+import logging
 from dataclasses import dataclass
 
 from aiohttp import ClientSession
@@ -27,6 +28,7 @@ class SessionConfiguration:
     verify_ssl: bool = True
     token: str | None = None
     pagination_items_per_page: int = 10
+    logger: logging.Logger | None = None
 
     @property
     def headers(self) -> dict[str, str]:

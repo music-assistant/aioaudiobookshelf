@@ -1,5 +1,6 @@
 """BaseClient."""
 
+import logging
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 
@@ -21,6 +22,19 @@ class BaseClient:
         self.user = login_response.user
         if self.session_config.token is None:
             self.session_config.token = login_response.user.token
+
+        if self.session_config.logger is None:
+            self.logger = logging.getLogger(__name__)
+            logging.basicConfig()
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger = self.session_config.logger
+
+        self.logger.debug(
+            "Initialized client %s, token: %s",
+            self.__class__.__name__,
+            self.session_config.token,
+        )
 
         self._verify_user()
 
