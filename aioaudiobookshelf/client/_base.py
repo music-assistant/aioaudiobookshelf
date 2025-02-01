@@ -21,7 +21,10 @@ class BaseClient:
         self.session_config = session_config
         self.user = login_response.user
         if self.session_config.token is None:
-            self.session_config.token = login_response.user.token
+            self.token = login_response.user.token
+            self.session_config.token = self.token
+        else:
+            self.token = self.session_config.token
 
         if self.session_config.logger is None:
             self.logger = logging.getLogger(__name__)
@@ -33,7 +36,7 @@ class BaseClient:
         self.logger.debug(
             "Initialized client %s, token: %s",
             self.__class__.__name__,
-            self.session_config.token,
+            self.token,
         )
 
         self._verify_user()
