@@ -11,12 +11,9 @@ from aioaudiobookshelf.schema.calls_library import (
     AllLibrariesResponse,
     LibraryAuthorsResponse,
     LibraryCollectionsMinifiedResponse,
-    LibraryCollectionsResponse,
     LibraryItemsMinifiedResponse,
-    LibraryItemsResponse,
     LibraryPlaylistsResponse,
     LibrarySeriesMinifiedResponse,
-    LibrarySeriesResponse,
     LibraryWithFilterDataResponse,
 )
 from aioaudiobookshelf.schema.library import Library, LibraryFilterData
@@ -74,7 +71,7 @@ class LibrariesClient(BaseClient):
 
     async def get_library_items(
         self, *, library_id: str
-    ) -> AsyncGenerator[LibraryItemsResponse | LibraryItemsMinifiedResponse]:
+    ) -> AsyncGenerator[LibraryItemsMinifiedResponse]:
         """Get library items.
 
         Returns only minified items at this point.
@@ -86,7 +83,7 @@ class LibrariesClient(BaseClient):
             endpoint=endpoint,
             minified=minified,
             response_cls_minified=LibraryItemsMinifiedResponse,
-            response_cls=LibraryItemsResponse,
+            response_cls=LibraryItemsMinifiedResponse,
         ):
             yield result
 
@@ -95,7 +92,7 @@ class LibrariesClient(BaseClient):
 
     async def get_library_series(
         self, *, library_id: str
-    ) -> AsyncGenerator[LibrarySeriesMinifiedResponse | LibrarySeriesResponse]:
+    ) -> AsyncGenerator[LibrarySeriesMinifiedResponse]:
         """Get series in that library.
 
         Returns only minified items at this point.
@@ -106,14 +103,14 @@ class LibrariesClient(BaseClient):
         async for result in self._get_library_with_pagination(
             endpoint=endpoint,
             minified=minified,
-            response_cls=LibrarySeriesResponse,
+            response_cls=LibrarySeriesMinifiedResponse,
             response_cls_minified=LibrarySeriesMinifiedResponse,
         ):
             yield result
 
     async def get_library_collections(
         self, *, library_id: str
-    ) -> AsyncGenerator[LibraryCollectionsMinifiedResponse | LibraryCollectionsResponse]:
+    ) -> AsyncGenerator[LibraryCollectionsMinifiedResponse]:
         """Get collections in that library.
 
         Returns only minified items at this point.
@@ -124,7 +121,7 @@ class LibrariesClient(BaseClient):
         async for result in self._get_library_with_pagination(
             endpoint=endpoint,
             minified=minified,
-            response_cls=LibraryCollectionsResponse,
+            response_cls=LibraryCollectionsMinifiedResponse,
             response_cls_minified=LibraryCollectionsMinifiedResponse,
         ):
             yield result
