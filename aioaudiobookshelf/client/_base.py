@@ -21,10 +21,10 @@ class BaseClient:
         self.session_config = session_config
         self.user = login_response.user
         if self.session_config.token is None:
-            self.token = login_response.user.token
-            self.session_config.token = self.token
+            self._token = login_response.user.token
+            self.session_config.token = self._token
         else:
-            self.token = self.session_config.token
+            self._token = self.session_config.token
 
         if self.session_config.logger is None:
             self.logger = logging.getLogger(__name__)
@@ -36,10 +36,14 @@ class BaseClient:
         self.logger.debug(
             "Initialized client %s, token: %s",
             self.__class__.__name__,
-            self.token,
+            self._token,
         )
 
         self._verify_user()
+
+    @property
+    def token(self) -> str:
+        return self._token
 
     @abstractmethod
     def _verify_user(self) -> None:
