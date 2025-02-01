@@ -69,6 +69,7 @@ class MeClient(BaseClient):
             - currentTime works only if duration is sent as well, but then don't
               send progress at the same time.
         """
+        logger_item = "audiobook" if not episode_id else "podcast"
         endpoint = f"/api/me/progress/{item_id}"
         if episode_id is not None:
             endpoint += f"/{episode_id}"
@@ -77,7 +78,7 @@ class MeClient(BaseClient):
             data={"isFinished": is_finished},
         )
         if is_finished:
-            self.logger.debug("Marked played: %s", endpoint)
+            self.logger.debug("Marked %s, id %s finished.", logger_item, item_id)
             return
         percentage = progress_seconds / duration_seconds
         await self._patch(
@@ -88,7 +89,9 @@ class MeClient(BaseClient):
             endpoint,
             data={"duration": duration_seconds, "currentTime": progress_seconds},
         )
-        self.logger.debug("Updated to %.0f %", percentage * 100)
+        self.logger.debug(
+            "Updated progress of %s, id %s to %.2f%%.", logger_item, item_id, percentage * 100
+        )
 
     async def remove_my_media_progress(self, *, media_progress_id: str) -> None:
         """Remove a single media progress."""
