@@ -86,7 +86,7 @@ class BaseClient:
         """PATCH request to abs api."""
         try:
             await self.session_config.session.patch(
-                endpoint,
+                f"{self.session_config.url}/{endpoint}",
                 json=data,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
