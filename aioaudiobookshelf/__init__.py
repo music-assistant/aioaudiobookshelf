@@ -1,6 +1,6 @@
 """Client library for Audiobookshelf."""
 
-from aiohttp.client_exceptions import ClientResponseError
+from aiohttp.client_exceptions import ClientResponseError, InvalidUrlClientError
 
 from aioaudiobookshelf.client import AdminClient, SessionConfiguration, UserClient
 from aioaudiobookshelf.exceptions import LoginError
@@ -19,7 +19,7 @@ async def _get_login_response(
             ssl=session_config.verify_ssl,
             raise_for_status=True,
         )
-    except ClientResponseError as exc:
+    except (ClientResponseError, InvalidUrlClientError) as exc:
         raise LoginError from exc
     return LoginResponse.from_json(await resp.read())
 
