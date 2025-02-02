@@ -8,7 +8,7 @@ from aioaudiobookshelf.schema.library import (
     LibraryItemExpandedPodcast,
     LibraryItemPodcast,
 )
-from aioaudiobookshelf.schema.session import DeviceInfo, PlaybackSessionExpanded
+from aioaudiobookshelf.schema.session import PlaybackSessionExpanded
 
 
 class ItemsClient(BaseClient):
@@ -60,23 +60,6 @@ class ItemsClient(BaseClient):
         if episode_id is not None:
             endpoint += f"/{episode_id}"
         response = await self._post(endpoint, data=session_parameters.to_dict())
-        return PlaybackSessionExpanded.from_json(response)
-
-    async def get_playback_session_music_assistant(
-        self, *, device_info: DeviceInfo, book_id: str
-    ) -> PlaybackSessionExpanded:
-        """Music Assistant playback session for Audiobooks.
-
-        Podcasts can be played directly, as they are single file.
-        """
-        params = PlaybackSessionParameters(
-            device_info=device_info,
-            force_direct_play=False,
-            force_transcode=False,
-            supported_mime_types=[],  # means no transcoding for us
-        )
-        endpoint = f"/api/items/{book_id}/play"
-        response = await self._post(endpoint, data=params.to_dict())
         return PlaybackSessionExpanded.from_json(response)
 
     # update audio track
