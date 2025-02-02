@@ -6,6 +6,10 @@ from typing import Annotated
 from mashumaro.types import Alias
 
 from aioaudiobookshelf.schema import _BaseModel
+from aioaudiobookshelf.schema.library import (
+    LibraryItemExpandedBook,
+    LibraryItemExpandedPodcast,
+)
 from aioaudiobookshelf.schema.session import DeviceInfo
 
 
@@ -26,3 +30,24 @@ class PlayParameters(_BaseModel):
 
 
 PlaybackSessionParameters = PlayParameters
+
+
+@dataclass(kw_only=True)
+class LibraryItemsBatchParameters(_BaseModel):
+    """GetLibraryItemsBatchParameters."""
+
+    library_item_ids: Annotated[list[str], Alias("libraryItemIds")]
+
+
+@dataclass(kw_only=True)
+class LibraryItemsBatchBookResponse(_BaseModel):
+    """GetLibraryItemsBatchBookResponse."""
+
+    library_items: Annotated[list[LibraryItemExpandedBook], Alias("libraryItems")]
+
+
+@dataclass(kw_only=True)
+class LibraryItemsBatchPodcastResponse(_BaseModel):
+    """GetLibraryItemsBatchBookResponse."""
+
+    library_items: Annotated[list[LibraryItemExpandedPodcast], Alias("libraryItems")]

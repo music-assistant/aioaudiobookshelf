@@ -1,7 +1,12 @@
 """Calls to /api/items."""
 
 from aioaudiobookshelf.client._base import BaseClient
-from aioaudiobookshelf.schema.calls_items import PlaybackSessionParameters
+from aioaudiobookshelf.schema.calls_items import (
+    LibraryItemsBatchBookResponse,
+    LibraryItemsBatchParameters,
+    LibraryItemsBatchPodcastResponse,
+    PlaybackSessionParameters,
+)
 from aioaudiobookshelf.schema.library import (
     LibraryItemBook,
     LibraryItemExpandedBook,
@@ -67,4 +72,37 @@ class ItemsClient(BaseClient):
     # get tone metadata
     # update chapters
     # tone scan
-    # batch delete, update, get, quick match
+
+    async def _get_libray_item_batch(
+        self, *, item_ids: list[str] | LibraryItemsBatchParameters
+    ) -> bytes:
+        if isinstance(item_ids, list):
+            if not item_ids:
+                return b""
+            params = LibraryItemsBatchParameters(library_item_ids=item_ids)
+        else:
+            if not item_ids.library_item_ids:
+                return b""
+            params = item_ids
+
+        return await self._post("/api/items/batch/get", data=params.to_dict())
+
+    async def get_library_item_batch_book(
+        self, *, item_ids: list[str] | LibraryItemsBatchParameters
+    ) -> list[LibraryItemExpandedBook]:
+        """Get multiple library items at once. Always expanded."""
+        data = await self._get_libray_item_batch(item_ids=item_ids)
+        if not data:
+            return []
+        return LibraryItemsBatchBookResponse.from_json(data).library_items
+
+    async def get_library_item_batch_podcast(
+        self, *, item_ids: list[str] | LibraryItemsBatchParameters
+    ) -> list[LibraryItemExpandedPodcast]:
+        """Get multiple library items at once. Always expanded."""
+        data = await self._get_libray_item_batch(item_ids=item_ids)
+        if not data:
+            return []
+        return LibraryItemsBatchPodcastResponse.from_json(data).library_items
+
+    # batch delete, update, quick match
