@@ -20,11 +20,9 @@ class BaseClient:
     ) -> None:
         self.session_config = session_config
         self.user = login_response.user
-        if self.session_config.token is None:
-            self._token = login_response.user.token
-            self.session_config.token = self._token
-        else:
-            self._token = self.session_config.token
+        if not self.session_config.token:
+            self.session_config.token = login_response.user.token
+        self._token = self.session_config.token
 
         if self.session_config.logger is None:
             self.logger = logging.getLogger(__name__)

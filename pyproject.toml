@@ -12,6 +12,7 @@ classifiers = [
 dependencies = [
   "aiohttp",
   "mashumaro",
+  "python-socketio",
 ]
 description = "Async library for Audiobookshelf"
 license = {text = "Apache-2.0"}

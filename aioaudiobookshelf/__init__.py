@@ -2,7 +2,7 @@
 
 from aiohttp.client_exceptions import ClientResponseError, InvalidUrlClientError
 
-from aioaudiobookshelf.client import AdminClient, SessionConfiguration, UserClient
+from aioaudiobookshelf.client import AdminClient, SessionConfiguration, SocketClient, UserClient
 from aioaudiobookshelf.exceptions import LoginError
 from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
 
@@ -36,6 +36,24 @@ async def get_user_client(
     )
 
     return UserClient(session_config=session_config, login_response=login_response)
+
+
+async def get_user_and_socket_client(
+    *,
+    session_config: SessionConfiguration,
+    username: str,
+    password: str,
+) -> tuple[UserClient, SocketClient]:
+    """Get user and socket client."""
+    login_response = await _get_login_response(
+        session_config=session_config, username=username, password=password
+    )
+
+    user_client = UserClient(session_config=session_config, login_response=login_response)
+    if not session_config.token:
+        session_config.token = user_client.token
+    socket_client = SocketClient(session_config=session_config)
+    return user_client, socket_client
 
 
 async def get_admin_client(
