@@ -144,29 +144,29 @@ class SocketClient:
 
     async def _on_user_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_updated is not None:
-            self.on_user_updated(User.from_dict(data))
+            await self.on_user_updated(User.from_dict(data))
 
     async def _on_user_item_progress_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_item_progress_updated is not None:
             event = UserItemProgressUpdatedEvent.from_dict(data)
-            self.on_user_item_progress_updated(event.id_, event.data)
+            await self.on_user_item_progress_updated(event.id_, event.data)
 
     async def _on_item_added(self, data: dict[str, Any]) -> None:
         if self.on_item_added is not None:
-            self.on_item_added(LibraryItemExpanded.from_dict(data))
+            await self.on_item_added(LibraryItemExpanded.from_dict(data))
 
     async def _on_item_updated(self, data: dict[str, Any]) -> None:
         if self.on_item_updated is not None:
-            self.on_item_updated(LibraryItemExpanded.from_dict(data))
+            await self.on_item_updated(LibraryItemExpanded.from_dict(data))
 
     async def _on_item_removed(self, data: dict[str, Any]) -> None:
         if self.on_item_removed is not None:
-            self.on_item_removed(LibraryItemExpanded.from_dict(data))
+            await self.on_item_removed(LibraryItemExpanded.from_dict(data))
 
     async def _on_items_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_added is not None:
-            self.on_items_added([LibraryItemExpanded.from_dict(x) for x in data])
+            await self.on_items_added([LibraryItemExpanded.from_dict(x) for x in data])
 
     async def _on_items_updated(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_updated is not None:
-            self.on_items_updated([LibraryItemExpanded.from_dict(x) for x in data])
+            await self.on_items_updated([LibraryItemExpanded.from_dict(x) for x in data])
