@@ -10,7 +10,10 @@ import socketio.exceptions
 from aiohttp import ClientSession
 
 from aioaudiobookshelf.exceptions import BadUserError
-from aioaudiobookshelf.schema.events_socket import UserItemProgressUpdatedEvent
+from aioaudiobookshelf.schema.events_socket import (
+    PodcastEpisodeDownload,
+    UserItemProgressUpdatedEvent,
+)
 from aioaudiobookshelf.schema.library import LibraryItemExpanded
 from aioaudiobookshelf.schema.media_progress import MediaProgress
 from aioaudiobookshelf.schema.user import User, UserType
@@ -91,6 +94,7 @@ class SocketClient:
 
         self.set_item_callbacks()
         self.set_user_callbacks()
+        self.set_podcast_episode_download_callbacks()
 
     def set_item_callbacks(
         self,
@@ -118,6 +122,12 @@ class SocketClient:
         self.on_user_updated = on_user_updated
         self.on_user_item_progress_updated = on_user_item_progress_updated
 
+    def set_podcast_episode_download_callbacks(
+        self, *, on_episode_download_finished: Callable[[PodcastEpisodeDownload], Any] | None = None
+    ) -> None:
+        """Set podcast episode download callbacks."""
+        self.on_episode_download_finished = on_episode_download_finished
+
     async def init_client(self) -> None:
         """Initialize the client."""
         self.client.on("connect", handler=self._on_connect)
@@ -130,6 +140,8 @@ class SocketClient:
         self.client.on("item_removed", handler=self._on_item_removed)
         self.client.on("items_added", handler=self._on_items_added)
         self.client.on("items_updated", handler=self._on_items_updated)
+
+        self.client.on("episode_download_finished", handler=self._on_episode_download_finished)
 
         await self.client.connect(url=self.session_config.url)
 
@@ -170,3 +182,7 @@ class SocketClient:
     async def _on_items_updated(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_updated is not None:
             await self.on_items_updated([LibraryItemExpanded.from_dict(x) for x in data])
+
+    async def _on_episode_download_finished(self, data: dict[str, Any]) -> None:
+        if self.on_episode_download_finished is not None:
+            await self.on_episode_download_finished(PodcastEpisodeDownload.from_dict(data))
