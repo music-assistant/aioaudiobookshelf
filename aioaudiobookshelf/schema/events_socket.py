@@ -37,3 +37,10 @@ class PodcastEpisodeDownload(_BaseModel):
     episode: str | None = None
     episode_type: Annotated[str, Alias("episodeType")]
     published_at: Annotated[int | None, Alias("publishedAt")] = None
+
+
+@dataclass(kw_only=True)
+class LibraryItemRemoved(_BaseModel):
+    """LibraryItemRemoved."""
+
+    id_: Annotated[str, Alias("id")]

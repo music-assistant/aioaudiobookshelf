@@ -11,6 +11,7 @@ from aiohttp import ClientSession
 
 from aioaudiobookshelf.exceptions import BadUserError
 from aioaudiobookshelf.schema.events_socket import (
+    LibraryItemRemoved,
     PodcastEpisodeDownload,
     UserItemProgressUpdatedEvent,
 )
@@ -101,7 +102,7 @@ class SocketClient:
         *,
         on_item_added: Callable[[LibraryItemExpanded], Any] | None = None,
         on_item_updated: Callable[[LibraryItemExpanded], Any] | None = None,
-        on_item_removed: Callable[[LibraryItemExpanded], Any] | None = None,
+        on_item_removed: Callable[[LibraryItemRemoved], Any] | None = None,
         on_items_added: Callable[[list[LibraryItemExpanded]], Any] | None = None,
         on_items_updated: Callable[[list[LibraryItemExpanded]], Any] | None = None,
     ) -> None:
@@ -173,7 +174,7 @@ class SocketClient:
 
     async def _on_item_removed(self, data: dict[str, Any]) -> None:
         if self.on_item_removed is not None:
-            await self.on_item_removed(LibraryItemExpanded.from_dict(data))
+            await self.on_item_removed(LibraryItemRemoved.from_dict(data))
 
     async def _on_items_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_added is not None:
