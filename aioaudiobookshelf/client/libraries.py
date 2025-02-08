@@ -54,12 +54,15 @@ class LibrariesClient(BaseClient):
         minified: bool = False,
         response_cls_minified: type[ResponseMinified],
         response_cls: type[ResponseNormal],
+        filter_str: str | None = None,
     ) -> AsyncGenerator[ResponseMinified | ResponseNormal]:
         page_cnt = 0
         params: dict[str, int | str] = {
             "minified": int(minified),
             "limit": self.session_config.pagination_items_per_page,
         }
+        if filter_str is not None:
+            params["filter"] = filter_str
         while True:
             params["page"] = page_cnt
             response = await self._get(endpoint, params)
@@ -70,7 +73,7 @@ class LibrariesClient(BaseClient):
                 yield response_cls.from_json(response)
 
     async def get_library_items(
-        self, *, library_id: str
+        self, *, library_id: str, filter_str: str | None = None
     ) -> AsyncGenerator[LibraryItemsMinifiedResponse]:
         """Get library items.
 
@@ -84,6 +87,7 @@ class LibrariesClient(BaseClient):
             minified=minified,
             response_cls_minified=LibraryItemsMinifiedResponse,
             response_cls=LibraryItemsMinifiedResponse,
+            filter_str=filter_str,
         ):
             yield result
 
