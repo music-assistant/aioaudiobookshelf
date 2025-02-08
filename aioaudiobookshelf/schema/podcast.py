@@ -21,7 +21,7 @@ class PodcastMetadata(_BaseModel):
     feed_url: Annotated[str | None, Alias("feedUrl")] = None
     image_url: Annotated[str | None, Alias("imageUrl")] = None
     itunes_page_url: Annotated[str | None, Alias("itunesPageUrl")] = None
-    itunes_id: Annotated[int | None, Alias("itunesId")] = None
+    itunes_id: Annotated[int | str | None, Alias("itunesId")] = None
     # str: is not documented
     itunes_artist_id: Annotated[int | str | None, Alias("itunesArtistId")] = None
     explicit: bool
