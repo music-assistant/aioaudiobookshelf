@@ -35,3 +35,12 @@ class AuthorExpanded(Author):
     """ABSAuthorExpanded."""
 
     num_books: Annotated[int, Alias("numBooks")]
+
+
+@dataclass(kw_only=True)
+class Narrator(_BaseModel):
+    """Narrator."""
+
+    id_: Annotated[str, Alias("id")]
+    name: str
+    num_books: Annotated[int, Alias("numBooks")]

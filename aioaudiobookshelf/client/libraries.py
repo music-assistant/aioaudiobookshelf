@@ -6,12 +6,13 @@ from typing import TypeVar
 from mashumaro.mixins.json import DataClassJSONMixin
 
 from aioaudiobookshelf.client._base import BaseClient
-from aioaudiobookshelf.schema.author import AuthorExpanded
+from aioaudiobookshelf.schema.author import AuthorExpanded, Narrator
 from aioaudiobookshelf.schema.calls_library import (
     AllLibrariesResponse,
     LibraryAuthorsResponse,
     LibraryCollectionsMinifiedResponse,
     LibraryItemsMinifiedResponse,
+    LibraryNarratorsResponse,
     LibraryPlaylistsResponse,
     LibrarySeriesMinifiedResponse,
     LibraryWithFilterDataResponse,
@@ -160,6 +161,11 @@ class LibrariesClient(BaseClient):
         """Get authors of library."""
         response = await self._get(endpoint=f"/api/libraries/{library_id}/authors")
         return LibraryAuthorsResponse.from_json(response).authors
+
+    async def get_library_narrators(self, *, library_id: str) -> list[Narrator]:
+        """Get narrators of a library."""
+        response = await self._get(endpoint=f"/api/libraries/{library_id}/narrators")
+        return LibraryNarratorsResponse.from_json(response).narrators
 
     # match lib items
     # scan lib folders
