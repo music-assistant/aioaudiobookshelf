@@ -6,6 +6,8 @@ from aioaudiobookshelf.client import AdminClient, SessionConfiguration, SocketCl
 from aioaudiobookshelf.exceptions import LoginError
 from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
 
+__version__ = "0.0.0"
+
 
 async def _get_login_response(
     *, session_config: SessionConfiguration, username: str, password: str
