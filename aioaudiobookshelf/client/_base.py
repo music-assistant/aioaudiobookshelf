@@ -97,7 +97,7 @@ class BaseClient:
         """DELETE request to abs api."""
         try:
             await self.session_config.session.delete(
-                endpoint,
+                f"{self.session_config.url}/{endpoint}",
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
                 raise_for_status=True,
