@@ -26,3 +26,7 @@ class LoginResponse(DataClassJSONMixin):
     user_default_library_id: Annotated[str, Alias("userDefaultLibraryId")]
     server_settings: Annotated[ServerSettings, Alias("serverSettings")]
     source: Annotated[str, Alias("Source")]
+
+
+# api/authorize, if token is used for authorization
+AuthorizeResponse = LoginResponse

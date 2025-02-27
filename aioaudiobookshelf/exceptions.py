@@ -11,3 +11,7 @@ class LoginError(Exception):
 
 class ApiError(Exception):
     """Exception raised if call to api failed."""
+
+
+class TokenIsMissingError(Exception):
+    """Exception raised if token is missing."""

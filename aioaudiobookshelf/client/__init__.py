@@ -9,7 +9,7 @@ import socketio
 import socketio.exceptions
 from aiohttp import ClientSession
 
-from aioaudiobookshelf.exceptions import BadUserError
+from aioaudiobookshelf.exceptions import BadUserError, TokenIsMissingError
 from aioaudiobookshelf.schema.events_socket import (
     LibraryItemRemoved,
     PodcastEpisodeDownload,
@@ -37,7 +37,7 @@ class SessionConfiguration:
     session: ClientSession
     url: str
     verify_ssl: bool = True
-    token: str = ""
+    token: str | None = None
     pagination_items_per_page: int = 10
     logger: logging.Logger | None = None
 
@@ -45,7 +45,7 @@ class SessionConfiguration:
     def headers(self) -> dict[str, str]:
         """Session headers."""
         if self.token is None:
-            raise RuntimeError("Token not set.")
+            raise TokenIsMissingError("Token not set.")
         return {"Authorization": f"Bearer {self.token}"}
 
     def __post_init__(self) -> None:
