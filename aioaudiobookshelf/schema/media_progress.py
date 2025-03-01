@@ -17,9 +17,10 @@ class MediaProgress(_BaseModel):
     id_: Annotated[str, Alias("id")]
     library_item_id: Annotated[str, Alias("libraryItemId")]
     episode_id: Annotated[str | None, Alias("episodeId")] = None
-    duration: float  # seconds
-    progress: float  # percent 0->1
-    current_time: Annotated[float, Alias("currentTime")]  # seconds
+    # https://github.com/music-assistant/aioaudiobookshelf/issues/1
+    progress: float | None = None  # percent 0->1
+    duration: float | None  # seconds
+    current_time: Annotated[float | None, Alias("currentTime")] = None  # seconds
     is_finished: Annotated[bool, Alias("isFinished")]
     hide_from_continue_listening: Annotated[bool, Alias("hideFromContinueListening")]
     last_update: Annotated[int, Alias("lastUpdate")]  # ms epoch
