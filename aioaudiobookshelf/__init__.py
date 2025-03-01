@@ -6,7 +6,7 @@ from aioaudiobookshelf.client import AdminClient, SessionConfiguration, SocketCl
 from aioaudiobookshelf.exceptions import LoginError, TokenIsMissingError
 from aioaudiobookshelf.schema.calls_login import AuthorizeResponse, LoginParameters, LoginResponse
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 
 async def _get_login_response(
