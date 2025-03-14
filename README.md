@@ -79,7 +79,7 @@ async def abs_basics():
 
         # get a single podcast
         podcast_id = "dda96167-eaad-4012-83e1-149c6700d3e8"
-        podcast_expanded = client.get_library_item_podcast(podcast_id=podcast_id, expanded=True)
+        podcast_expanded = await client.get_library_item_podcast(podcast_id=podcast_id, expanded=True)
 
 
 asyncio.run(abs_basics())
