@@ -3,6 +3,7 @@
 from collections.abc import AsyncGenerator
 from typing import TypeVar
 
+from mashumaro.codecs.json import json_decode
 from mashumaro.mixins.json import DataClassJSONMixin
 
 from aioaudiobookshelf.client._base import BaseClient
@@ -18,6 +19,7 @@ from aioaudiobookshelf.schema.calls_library import (
     LibraryWithFilterDataResponse,
 )
 from aioaudiobookshelf.schema.library import Library, LibraryFilterData
+from aioaudiobookshelf.schema.shelf import Shelf
 
 ResponseMinified = TypeVar("ResponseMinified", bound=DataClassJSONMixin)
 ResponseNormal = TypeVar("ResponseNormal", bound=DataClassJSONMixin)
@@ -147,7 +149,17 @@ class LibrariesClient(BaseClient):
         ):
             yield result
 
-    # get library's personalized view
+    async def get_library_personalized_view(
+        self, *, library_id: str, limit: int = 10
+    ) -> list[Shelf]:
+        """Get personalized view of library.
+
+        TODO: Add rssfeed
+        """
+        response = await self._get(
+            endpoint=f"/api/libraries/{library_id}/personalized", params={"limit": limit}
+        )
+        return json_decode(response, list[Shelf])
 
     async def get_library_filterdata(self, *, library_id: str) -> LibraryFilterData:
         """Get filterdata of library."""
