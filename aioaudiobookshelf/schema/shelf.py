@@ -1,4 +1,7 @@
 """Schema for shelf, the response object to library's personalized view."""
+# Discriminators don't work together with aliases.
+# https://github.com/Fatal1ty/mashumaro/issues/254
+# ruff: noqa: N815
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -7,10 +10,11 @@ from typing import Annotated
 from mashumaro.types import Alias, Discriminator
 
 from aioaudiobookshelf.schema.author import AuthorExpanded
+from aioaudiobookshelf.schema.book import BookMinified
 
 from . import _BaseModel
-from .library import LibraryItemMinified
-from .podcast import PodcastEpisode
+from .library import LibraryMediaType, _LibraryItemBase
+from .podcast import PodcastEpisode, PodcastMinified
 from .series import Series
 
 
@@ -25,18 +29,12 @@ class ShelfId(StrEnum):
     EPISODES_RECENTLY_ADDED = "episodes-recently-added"
     RECENT_SERIES = "recent-series"
     NEWEST_AUTHORS = "newest-authors"
+    NEWEST_EPISODES = "newest-episodes"
     DISCOVER = "discover"
-    UNKNOWN = "unknown"
-
-    @classmethod
-    def _missing_(cls, value: object) -> "ShelfId":  # noqa: ARG003
-        # copied from music_assistant_models
-        """Set default enum member if an unknown value is provided."""
-        return cls.UNKNOWN
 
 
 @dataclass(kw_only=True)
-class ShelfLibraryItemMinified(LibraryItemMinified):
+class ShelfLibraryItemMinified(_LibraryItemBase):
     """ShelfLibraryItemMinified.
 
     Beside using type, there is another distinction on which attributes
@@ -62,6 +60,35 @@ class ShelfLibraryItemMinified(LibraryItemMinified):
 
     # id: listen-again
     finished_at_ms: Annotated[int | None, Alias("finishedAt")] = None
+
+    # This and the two subclasses are copied over from libraries, as we otherwise
+    # face issues with the discriminator
+    class Config(_LibraryItemBase.Config):
+        """Config."""
+
+        discriminator = Discriminator(
+            field="mediaType",
+            include_subtypes=True,
+        )
+
+    num_files: Annotated[int, Alias("numFiles")]
+    size: int
+
+
+@dataclass(kw_only=True)
+class LibraryItemMinifiedBook(ShelfLibraryItemMinified):
+    """LibraryItemMinifiedBook."""
+
+    media: BookMinified
+    mediaType: LibraryMediaType = LibraryMediaType.BOOK
+
+
+@dataclass(kw_only=True)
+class LibraryItemMinifiedPodcast(ShelfLibraryItemMinified):
+    """LibraryItemMinifiedPodcast."""
+
+    media: PodcastMinified
+    mediaType: LibraryMediaType = LibraryMediaType.PODCAST
 
 
 @dataclass(kw_only=True)
@@ -100,7 +127,7 @@ class ShelfType(StrEnum):
 class _ShelfBase(_BaseModel):
     """Shelf."""
 
-    id_: Annotated[ShelfId, Alias("id")]
+    id_: Annotated[ShelfId | str, Alias("id")]
     label: str
     label_string_key: Annotated[str, Alias("labelStringKey")]
     type_: Annotated[ShelfType, Alias("type")]
