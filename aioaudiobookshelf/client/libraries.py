@@ -19,7 +19,14 @@ from aioaudiobookshelf.schema.calls_library import (
     LibraryWithFilterDataResponse,
 )
 from aioaudiobookshelf.schema.library import Library, LibraryFilterData
-from aioaudiobookshelf.schema.shelf import Shelf
+from aioaudiobookshelf.schema.shelf import (
+    Shelf,
+    ShelfAuthors,
+    ShelfBook,
+    ShelfEpisode,
+    ShelfPodcast,
+    ShelfSeries,
+)
 
 ResponseMinified = TypeVar("ResponseMinified", bound=DataClassJSONMixin)
 ResponseNormal = TypeVar("ResponseNormal", bound=DataClassJSONMixin)
@@ -151,7 +158,7 @@ class LibrariesClient(BaseClient):
 
     async def get_library_personalized_view(
         self, *, library_id: str, limit: int = 10
-    ) -> list[Shelf]:
+    ) -> list[ShelfBook | ShelfPodcast | ShelfAuthors | ShelfEpisode | ShelfSeries]:
         """Get personalized view of library.
 
         TODO: Add rssfeed
