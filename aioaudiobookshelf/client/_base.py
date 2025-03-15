@@ -32,9 +32,8 @@ class BaseClient:
             self.logger = self.session_config.logger
 
         self.logger.debug(
-            "Initialized client %s, token: %s",
+            "Initialized client %s",
             self.__class__.__name__,
-            self._token,
         )
 
         self._verify_user()
