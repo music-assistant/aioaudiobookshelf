@@ -56,7 +56,7 @@ class AudioFile(_BaseModel):
     exclude: bool
     error: str | None = None
     format: str
-    duration: float
+    duration: float | None
     bit_rate: Annotated[int, Alias("bitRate")]
     language: str | None = None
     codec: str
