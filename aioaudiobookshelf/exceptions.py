@@ -15,3 +15,11 @@ class ApiError(Exception):
 
 class TokenIsMissingError(Exception):
     """Exception raised if token is missing."""
+
+
+class AccessTokenExpiredError(Exception):
+    """Exception raised if access token expired."""
+
+
+class RefreshTokenExpiredError(Exception):
+    """Exception raised if refresh token expired."""

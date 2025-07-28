@@ -52,7 +52,13 @@ class _UserBase(_BaseModel):
 class User(_UserBase):
     """User."""
 
-    token: str
+    # see https://github.com/advplyr/audiobookshelf/discussions/4460
+    # new in v2.26.0 old token system will be removed in the future
+    # we make them optional to have some backwards compatibility
+    token: str | None = None
+    # will only be returned if x-return-tokens is set to true in header
+    refresh_token: Annotated[str | None, Alias("refreshToken")] = None
+    access_token: Annotated[str | None, Alias("accessToken")] = None
 
     media_progress: Annotated[list[MediaProgress], Alias("mediaProgress")]
     series_hide_from_continue_listening: Annotated[

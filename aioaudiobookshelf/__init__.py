@@ -2,29 +2,13 @@
 
 from aiohttp.client_exceptions import ClientResponseError, InvalidUrlClientError
 
-from aioaudiobookshelf.client import AdminClient, SessionConfiguration, SocketClient, UserClient
+from aioaudiobookshelf.client import AdminClient, SocketClient, UserClient
+from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 from aioaudiobookshelf.exceptions import LoginError, TokenIsMissingError
-from aioaudiobookshelf.schema.calls_login import AuthorizeResponse, LoginParameters, LoginResponse
+from aioaudiobookshelf.helpers import get_login_response
+from aioaudiobookshelf.schema.calls_login import AuthorizeResponse
 
 __version__ = "0.1.7"
-
-
-async def _get_login_response(
-    *, session_config: SessionConfiguration, username: str, password: str
-) -> LoginResponse:
-    """Login via username and password."""
-    login_request = LoginParameters(username=username, password=password).to_dict()
-
-    try:
-        resp = await session_config.session.post(
-            f"{session_config.url}/login",
-            json=login_request,
-            ssl=session_config.verify_ssl,
-            raise_for_status=True,
-        )
-    except (ClientResponseError, InvalidUrlClientError) as exc:
-        raise LoginError from exc
-    return LoginResponse.from_json(await resp.read())
 
 
 async def _get_authorize_response(*, session_config: SessionConfiguration) -> AuthorizeResponse:
@@ -70,7 +54,7 @@ async def get_user_client(
     password: str,
 ) -> UserClient:
     """Get a user client."""
-    login_response = await _get_login_response(
+    login_response = await get_login_response(
         session_config=session_config, username=username, password=password
     )
 
@@ -84,7 +68,7 @@ async def get_user_and_socket_client(
     password: str,
 ) -> tuple[UserClient, SocketClient]:
     """Get user and socket client."""
-    login_response = await _get_login_response(
+    login_response = await get_login_response(
         session_config=session_config, username=username, password=password
     )
 
@@ -102,7 +86,7 @@ async def get_admin_client(
     password: str,
 ) -> UserClient:
     """Get a admin client."""
-    login_response = await _get_login_response(
+    login_response = await get_login_response(
         session_config=session_config, username=username, password=password
     )
 

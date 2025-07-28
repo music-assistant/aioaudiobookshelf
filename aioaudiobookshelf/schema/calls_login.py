@@ -30,3 +30,6 @@ class LoginResponse(DataClassJSONMixin):
 
 # api/authorize, if token is used for authorization
 AuthorizeResponse = LoginResponse
+
+# auth/refresh, new in v2.26
+RefreshResponse = LoginResponse

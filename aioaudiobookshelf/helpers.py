@@ -4,6 +4,12 @@ import base64
 import urllib.parse
 from enum import StrEnum
 
+from aiohttp.client_exceptions import ClientResponseError, InvalidUrlClientError
+
+from aioaudiobookshelf.client.session_configuration import SessionConfiguration
+from aioaudiobookshelf.exceptions import LoginError
+from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
+
 
 class FilterGroup(StrEnum):
     """FilterGroup."""
@@ -54,3 +60,23 @@ def get_library_filter_string(
         return f"{filter_group.value}.{_encoded}"
 
     raise NotImplementedError(f"The {filter_group=} is not yet implemented.")
+
+
+async def get_login_response(
+    *, session_config: SessionConfiguration, username: str, password: str
+) -> LoginResponse:
+    """Login via username and password."""
+    login_request = LoginParameters(username=username, password=password).to_dict()
+
+    try:
+        resp = await session_config.session.post(
+            f"{session_config.url}/login",
+            json=login_request,
+            ssl=session_config.verify_ssl,
+            raise_for_status=True,
+            # adapt > v2.26.0 https://github.com/advplyr/audiobookshelf/discussions/4460
+            headers={"x-return-tokens": "true"},
+        )
+    except (ClientResponseError, InvalidUrlClientError) as exc:
+        raise LoginError from exc
+    return LoginResponse.from_json(await resp.read())
