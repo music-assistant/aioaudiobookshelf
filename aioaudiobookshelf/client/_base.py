@@ -11,8 +11,8 @@ from aioaudiobookshelf.helpers import get_login_response
 
 if TYPE_CHECKING:
     from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import AccessTokenExpiredError, ApiError, RefreshTokenExpiredError
-from aioaudiobookshelf.schema.calls_login import LoginResponse, RefreshResponse
+from aioaudiobookshelf.exceptions import AccessTokenExpiredError, ApiError
+from aioaudiobookshelf.schema.calls_login import LoginResponse
 
 
 class BaseClient:
@@ -179,26 +179,9 @@ class BaseClient:
             raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
 
     async def refresh(self) -> None:
-        """Refresh access_token with refresh token.
-
-        v2.26 and above
-        """
-        try:
-            endpoint = "auth/refresh"
-            response = await self.session_config.session.post(
-                f"{self.session_config.url}/{endpoint}",
-                ssl=self.session_config.verify_ssl,
-                headers=self.session_config.headers_refresh_logout,
-                raise_for_status=True,
-            )
-        except ClientResponseError as err:
-            raise RefreshTokenExpiredError from err
-        data = await response.read()
-        refresh_response = RefreshResponse.from_json(data)
-        assert refresh_response.user.access_token is not None
-        assert refresh_response.user.refresh_token is not None
-        self.session_config.access_token = refresh_response.user.access_token
-        self.session_config.refresh_token = refresh_response.user.refresh_token
+        """Refresh tokens."""
+        await self.session_config.refresh()
+        assert self.session_config.access_token is not None
         self._token = self.session_config.access_token
 
     async def relogin(self, username: str, password: str) -> None:

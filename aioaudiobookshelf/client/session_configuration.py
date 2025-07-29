@@ -1,11 +1,18 @@
 """Session Configuration."""
 
+import asyncio
 import logging
 from dataclasses import dataclass
 
 from aiohttp.client import ClientSession
+from aiohttp.client_exceptions import ClientResponseError
 
-from aioaudiobookshelf.exceptions import TokenIsMissingError
+from aioaudiobookshelf.exceptions import (
+    RefreshTokenExpiredError,
+    ServiceUnavailableError,
+    TokenIsMissingError,
+)
+from aioaudiobookshelf.schema.calls_login import RefreshResponse
 
 
 @dataclass(kw_only=True)
@@ -51,3 +58,31 @@ class SessionConfiguration:
     def __post_init__(self) -> None:
         """Post init."""
         self.url = self.url.rstrip("/")
+        self.__refresh_lock = asyncio.Lock()
+
+    async def refresh(self) -> None:
+        """Refresh access_token with refresh token.
+
+        v2.26 and above
+        """
+        if self.__refresh_lock.locked():
+            return
+        async with self.__refresh_lock:
+            try:
+                endpoint = "auth/refresh"
+                response = await self.session.post(
+                    f"{self.url}/{endpoint}",
+                    ssl=self.verify_ssl,
+                    headers=self.headers_refresh_logout,
+                    raise_for_status=True,
+                )
+            except ClientResponseError as err:
+                if err.code == 503:
+                    raise ServiceUnavailableError from err
+                raise RefreshTokenExpiredError from err
+            data = await response.read()
+            refresh_response = RefreshResponse.from_json(data)
+            assert refresh_response.user.access_token is not None
+            assert refresh_response.user.refresh_token is not None
+            self.access_token = refresh_response.user.access_token
+            self.refresh_token = refresh_response.user.refresh_token

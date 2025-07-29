@@ -1,5 +1,6 @@
 """Clients for Audiobookshelf."""
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -7,7 +8,12 @@ import socketio
 import socketio.exceptions
 
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import BadUserError
+from aioaudiobookshelf.exceptions import (
+    BadUserError,
+    RefreshTokenExpiredError,
+    ServiceUnavailableError,
+    TokenIsMissingError,
+)
 from aioaudiobookshelf.schema.events_socket import (
     LibraryItemRemoved,
     PodcastEpisodeDownload,
@@ -57,7 +63,10 @@ class AdminClient(UserClient):
 class SocketClient:
     """Client for connecting to abs' socket."""
 
-    def __init__(self, session_config: SessionConfiguration) -> None:
+    def __init__(
+        self,
+        session_config: SessionConfiguration,
+    ) -> None:
         """Init SocketClient."""
         self.session_config = session_config
 
@@ -67,6 +76,13 @@ class SocketClient:
             handle_sigint=False,
             ssl_verify=self.session_config.verify_ssl,
         )
+
+        if self.session_config.logger is None:
+            self.logger = logging.getLogger(__name__)
+            logging.basicConfig()
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger = self.session_config.logger
 
         self.set_item_callbacks()
         self.set_user_callbacks()
@@ -107,6 +123,7 @@ class SocketClient:
     async def init_client(self) -> None:
         """Initialize the client."""
         self.client.on("connect", handler=self._on_connect)
+        self.client.on("connect_error", handler=self._on_connect_error)
 
         self.client.on("user_updated", handler=self._on_user_updated)
         self.client.on("user_item_progress_updated", handler=self._on_user_item_progress_updated)
@@ -128,7 +145,26 @@ class SocketClient:
     logout = shutdown
 
     async def _on_connect(self) -> None:
-        await self.client.emit(event="auth", data=self.session_config.token)
+        """V2.26 and above: access token or api token."""
+        if self.session_config.access_token is not None:
+            token = self.session_config.access_token
+        else:
+            if self.session_config.token is None:
+                raise TokenIsMissingError
+            token = self.session_config.token
+        await self.client.emit(event="auth", data=token)
+        self.logger.debug("Socket connected.")
+
+    async def _on_connect_error(self, *_: Any) -> None:
+        if not self.session_config.auto_refresh or self.session_config.access_token is None:
+            return
+        # try to refresh token
+        self.logger.debug("Auto refreshing token")
+        try:
+            await self.session_config.refresh()
+        except (ServiceUnavailableError, RefreshTokenExpiredError):
+            # socketio will continue trying to reconnect.
+            return
 
     async def _on_user_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_updated is not None:

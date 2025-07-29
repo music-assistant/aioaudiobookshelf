@@ -73,8 +73,6 @@ async def get_user_and_socket_client(
     )
 
     user_client = UserClient(session_config=session_config, login_response=login_response)
-    if not session_config.token:
-        session_config.token = user_client.token
     socket_client = SocketClient(session_config=session_config)
     return user_client, socket_client
 

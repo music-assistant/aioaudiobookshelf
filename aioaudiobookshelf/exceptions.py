@@ -23,3 +23,7 @@ class AccessTokenExpiredError(Exception):
 
 class RefreshTokenExpiredError(Exception):
     """Exception raised if refresh token expired."""
+
+
+class ServiceUnavailableError(Exception):
+    """Raised if service is not available."""
