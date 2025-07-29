@@ -12,6 +12,7 @@ from aioaudiobookshelf.exceptions import (
     ServiceUnavailableError,
     TokenIsMissingError,
 )
+from aioaudiobookshelf.helpers import get_login_response
 from aioaudiobookshelf.schema.calls_login import RefreshResponse
 
 
@@ -86,3 +87,19 @@ class SessionConfiguration:
             assert refresh_response.user.refresh_token is not None
             self.access_token = refresh_response.user.access_token
             self.refresh_token = refresh_response.user.refresh_token
+
+    async def authenticate(self, *, username: str, password: str) -> None:
+        """Relogin and update tokens if refresh token expired."""
+        async with self.__refresh_lock:
+            login_response = await get_login_response(
+                session_config=self, username=username, password=password
+            )
+            if login_response.user.access_token is None:
+                # pre v2.26
+                assert login_response.user.token is not None
+                self.token = login_response.user.token
+                return
+            assert login_response.user.access_token is not None
+            assert login_response.user.refresh_token is not None
+            self.access_token = login_response.user.access_token
+            self.refresh_token = login_response.user.refresh_token

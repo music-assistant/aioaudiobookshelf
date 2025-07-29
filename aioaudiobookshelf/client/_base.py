@@ -7,11 +7,9 @@ from typing import TYPE_CHECKING, Any
 from aiohttp.client import ClientResponse
 from aiohttp.client_exceptions import ClientResponseError
 
-from aioaudiobookshelf.helpers import get_login_response
-
 if TYPE_CHECKING:
     from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import AccessTokenExpiredError, ApiError
+from aioaudiobookshelf.exceptions import AccessTokenExpiredError, ApiError, TokenIsMissingError
 from aioaudiobookshelf.schema.calls_login import LoginResponse
 
 
@@ -30,11 +28,9 @@ class BaseClient:
                 assert login_response.user.refresh_token is not None
                 self.session_config.refresh_token = login_response.user.refresh_token
                 self.session_config.access_token = login_response.user.access_token
-                self._token = login_response.user.access_token
             elif login_response.user.token is not None:
                 assert login_response.user.token is not None
                 self.session_config.token = login_response.user.token
-                self._token = login_response.user.token
 
         if self.session_config.logger is None:
             self.logger = logging.getLogger(__name__)
@@ -52,7 +48,11 @@ class BaseClient:
 
     @property
     def token(self) -> str:
-        return self._token
+        if self.session_config.access_token is not None:
+            return self.session_config.access_token
+        if self.session_config.token is None:
+            raise TokenIsMissingError
+        return self.session_config.token
 
     @abstractmethod
     def _verify_user(self) -> None:
@@ -181,19 +181,6 @@ class BaseClient:
     async def refresh(self) -> None:
         """Refresh tokens."""
         await self.session_config.refresh()
-        assert self.session_config.access_token is not None
-        self._token = self.session_config.access_token
-
-    async def relogin(self, username: str, password: str) -> None:
-        """Relogin client if refresh token expired."""
-        login_response = await get_login_response(
-            session_config=self.session_config, username=username, password=password
-        )
-        assert login_response.user.access_token is not None
-        assert login_response.user.refresh_token is not None
-        self.session_config.access_token = login_response.user.access_token
-        self.session_config.refresh_token = login_response.user.refresh_token
-        self._token = self.session_config.access_token
 
     async def logout(self) -> None:
         """Logout client."""

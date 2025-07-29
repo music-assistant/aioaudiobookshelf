@@ -3,12 +3,15 @@
 import base64
 import urllib.parse
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from aiohttp.client_exceptions import ClientResponseError, InvalidUrlClientError
 
-from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 from aioaudiobookshelf.exceptions import LoginError
 from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
+
+if TYPE_CHECKING:
+    from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 
 
 class FilterGroup(StrEnum):
@@ -63,7 +66,7 @@ def get_library_filter_string(
 
 
 async def get_login_response(
-    *, session_config: SessionConfiguration, username: str, password: str
+    *, session_config: "SessionConfiguration", username: str, password: str
 ) -> LoginResponse:
     """Login via username and password."""
     login_request = LoginParameters(username=username, password=password).to_dict()
