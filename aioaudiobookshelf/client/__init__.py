@@ -87,6 +87,7 @@ class SocketClient:
         self.set_item_callbacks()
         self.set_user_callbacks()
         self.set_podcast_episode_download_callbacks()
+        self.set_refresh_token_expired_callback()
 
     def set_item_callbacks(
         self,
@@ -119,6 +120,12 @@ class SocketClient:
     ) -> None:
         """Set podcast episode download callbacks."""
         self.on_episode_download_finished = on_episode_download_finished
+
+    def set_refresh_token_expired_callback(
+        self, *, on_refresh_token_expired: Callable[[], Any] | None = None
+    ) -> None:
+        """Set refresh token expired callback."""
+        self.on_refresh_token_expired = on_refresh_token_expired
 
     async def init_client(self) -> None:
         """Initialize the client."""
@@ -162,7 +169,11 @@ class SocketClient:
         self.logger.debug("Auto refreshing token")
         try:
             await self.session_config.refresh()
-        except (ServiceUnavailableError, RefreshTokenExpiredError):
+        except RefreshTokenExpiredError:
+            if self.on_refresh_token_expired is not None:
+                await self.on_refresh_token_expired()
+            return
+        except ServiceUnavailableError:
             # socketio will continue trying to reconnect.
             return
 
