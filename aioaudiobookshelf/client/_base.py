@@ -21,6 +21,7 @@ class BaseClient:
     ) -> None:
         self.session_config = session_config
         self.user = login_response.user
+        self.server_settings = login_response.server_settings
 
         if not self.session_config.token and not self.session_config.refresh_token:
             if login_response.user.refresh_token is not None:
