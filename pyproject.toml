@@ -18,7 +18,7 @@ description = "Async library for Audiobookshelf"
 license = {text = "Apache-2.0"}
 readme = "README.md"
 requires-python = ">=3.12"
-version = "0.1.8"
+version = "0.1.9"
 
 [project.optional-dependencies]
 test = [
@@ -133,7 +133,7 @@ known-first-party = ["music_assistant"]
 max-complexity = 25
 
 [tool.bumpver]
-current_version = "0.1.8"
+current_version = "0.1.9"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
