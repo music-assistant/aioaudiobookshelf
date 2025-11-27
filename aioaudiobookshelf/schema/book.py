@@ -18,7 +18,7 @@ class EBookFile(_BaseModel):
 
     ino: str
     metadata: FileMetadata
-    ebook_format: Annotated[str, Alias("ebookFormat")]
+    ebook_format: Annotated[str | None, Alias("ebookFormat")] = None
     added_at: Annotated[int, Alias("addedAt")]  # time in ms since unix epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # time in ms since unix epoch
 
