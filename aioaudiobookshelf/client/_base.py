@@ -82,16 +82,15 @@ class BaseClient:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
+                    # TODO: remove redundant clause
+                    try:
+                        response = await _request()
+                    except ClientResponseError as inner_exc:
+                        raise ApiError(f"API POST call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
             else:
                 raise ApiError(f"API POST call to {endpoint} failed.") from exc
-
-        # TODO: remove redundant clause
-        try:
-            response = await _request()
-        except ClientResponseError as exc:
-            raise ApiError(f"API POST call to {endpoint} failed.") from exc
 
         return await response.read()
 
@@ -141,15 +140,14 @@ class BaseClient:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
+                    try:
+                        await _request()
+                    except ClientResponseError as inner_exc:
+                        raise ApiError(f"API PATCH call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
             else:
                 raise ApiError(f"API PATCH call to {endpoint} failed.") from exc
-
-        try:
-            await _request()
-        except ClientResponseError as exc:
-            raise ApiError(f"API PATCH call to {endpoint} failed.") from exc
 
     async def _delete(self, endpoint: str) -> None:
         """DELETE request to abs api."""
@@ -169,15 +167,14 @@ class BaseClient:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
+                    try:
+                        await _request()
+                    except ClientResponseError as inner_exc:
+                        raise ApiError(f"API DELETE call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
             else:
                 raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
-
-        try:
-            await _request()
-        except ClientResponseError as exc:
-            raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
 
     async def refresh(self) -> None:
         """Refresh tokens."""
