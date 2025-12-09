@@ -4,7 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 
-from aiohttp.client import ClientSession
+from aiohttp.client import DEFAULT_TIMEOUT, ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientResponseError
 
 from aioaudiobookshelf.exceptions import (
@@ -32,6 +32,7 @@ class SessionConfiguration:
     refresh_token: str | None = None  # > v2.26
     auto_refresh: bool = True  # automatically refresh access token, should it be expired.
     pagination_items_per_page: int = 10
+    timeout: ClientTimeout = DEFAULT_TIMEOUT
     logger: logging.Logger | None = None
 
     @property

@@ -73,6 +73,7 @@ class BaseClient:
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
                 raise_for_status=True,
+                timeout=self.session_config.timeout,
             )
 
         try:
@@ -103,6 +104,7 @@ class BaseClient:
                 params=params,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
+                timeout=self.session_config.timeout,
             )
 
         response = await _request()
@@ -131,6 +133,7 @@ class BaseClient:
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
                 raise_for_status=True,
+                timeout=self.session_config.timeout,
             )
 
         try:
@@ -158,6 +161,7 @@ class BaseClient:
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
                 raise_for_status=True,
+                timeout=self.session_config.timeout,
             )
 
         try:
