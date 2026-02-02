@@ -1,6 +1,7 @@
 """Calls to /api/session."""
 
 from aioaudiobookshelf.client._base import BaseClient
+from aioaudiobookshelf.exceptions import ApiError, SessionNotFoundError
 from aioaudiobookshelf.schema.calls_session import (
     CloseOpenSessionsParameters,
     SyncOpenSessionParameters,
@@ -18,6 +19,8 @@ class SessionClient(BaseClient):
     async def get_open_session(self, *, session_id: str) -> PlaybackSessionExpanded:
         """Get open session."""
         response = await self._get(f"/api/session/{session_id}")
+        if not response:
+            raise SessionNotFoundError
         psession = PlaybackSessionExpanded.from_json(response)
         self.logger.debug(
             "Got playback session %s for %s named %s.",
@@ -31,7 +34,10 @@ class SessionClient(BaseClient):
         self, *, session_id: str, parameters: SyncOpenSessionParameters
     ) -> None:
         """Sync an open session."""
-        await self._post(f"/api/session/{session_id}/sync", data=parameters.to_dict())
+        try:
+            await self._post(f"/api/session/{session_id}/sync", data=parameters.to_dict())
+        except ApiError as err:
+            raise SessionNotFoundError from err
 
     async def close_open_session(
         self, *, session_id: str, parameters: CloseOpenSessionsParameters | None = None
@@ -39,4 +45,7 @@ class SessionClient(BaseClient):
         """Close open session."""
         _parameters = {} if parameters is None else parameters.to_dict()
         self.logger.debug("Closing playback session %s.", session_id)
-        await self._post(f"/api/session/{session_id}/close", data=_parameters)
+        try:
+            await self._post(f"/api/session/{session_id}/close", data=_parameters)
+        except ApiError as err:
+            raise SessionNotFoundError from err

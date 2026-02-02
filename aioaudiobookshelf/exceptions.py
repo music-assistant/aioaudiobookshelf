@@ -27,3 +27,7 @@ class RefreshTokenExpiredError(Exception):
 
 class ServiceUnavailableError(Exception):
     """Raised if service is not available."""
+
+
+class SessionNotFoundError(Exception):
+    """Specified session was not found."""
