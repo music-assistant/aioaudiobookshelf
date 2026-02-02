@@ -1,7 +1,10 @@
 """Calls to /api/session."""
 
 from aioaudiobookshelf.client._base import BaseClient
-from aioaudiobookshelf.schema.calls_session import CloseOpenSessionsParameters
+from aioaudiobookshelf.schema.calls_session import (
+    CloseOpenSessionsParameters,
+    SyncOpenSessionParameters,
+)
 from aioaudiobookshelf.schema.session import PlaybackSessionExpanded
 
 
@@ -24,7 +27,11 @@ class SessionClient(BaseClient):
         )
         return psession
 
-    # sync open session
+    async def sync_open_session(
+        self, *, session_id: str, parameters: SyncOpenSessionParameters
+    ) -> None:
+        """Sync an open session."""
+        await self._post(f"/api/session/{session_id}/sync", data=parameters.to_dict())
 
     async def close_open_session(
         self, *, session_id: str, parameters: CloseOpenSessionsParameters | None = None

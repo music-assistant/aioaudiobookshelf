@@ -15,3 +15,6 @@ class CloseOpenSessionsParameters(_BaseModel):
     current_time: Annotated[float, Alias("currentTime")]
     time_listened: Annotated[float, Alias("timeListened")]
     duration: float
+
+
+SyncOpenSessionParameters = CloseOpenSessionsParameters

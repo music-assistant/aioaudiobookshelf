@@ -1,8 +1,17 @@
 """Calls to /api/authors."""
 
+from enum import StrEnum
+
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.schema.author import Author
 from aioaudiobookshelf.schema.calls_authors import AuthorWithItems, AuthorWithItemsAndSeries
+
+
+class AuthorImageFormat(StrEnum):
+    """AuthorImageFormat."""
+
+    JPEG = "jpeg"
+    WEBP = "webp"
 
 
 class AuthorsClient(BaseClient):
@@ -31,4 +40,18 @@ class AuthorsClient(BaseClient):
 
     # update author
     # match author
-    # get author image
+    async def get_author_image(
+        self,
+        *,
+        author_id: str,
+        width: int = 400,
+        height: int | None = None,
+        format_: AuthorImageFormat = AuthorImageFormat.JPEG,
+        raw: bool = False,
+    ) -> bytes:
+        """Get image of author. If height is None, image is scaled proportionally."""
+        endpoint = f"/api/authors/{author_id}/image"
+        params = {"width": width, "format": format_.value, "raw": int(raw)}
+        if height:
+            params["height"] = height
+        return await self._get(endpoint, params=params)
