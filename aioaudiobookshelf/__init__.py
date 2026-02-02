@@ -8,7 +8,7 @@ from aioaudiobookshelf.exceptions import LoginError, TokenIsMissingError
 from aioaudiobookshelf.helpers import get_login_response
 from aioaudiobookshelf.schema.calls_login import AuthorizeResponse
 
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 
 
 async def _get_authorize_response(*, session_config: SessionConfiguration) -> AuthorizeResponse:
