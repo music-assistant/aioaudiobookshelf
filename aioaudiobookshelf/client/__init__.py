@@ -17,10 +17,13 @@ from aioaudiobookshelf.exceptions import (
 from aioaudiobookshelf.schema.events_socket import (
     LibraryItemRemoved,
     PodcastEpisodeDownload,
+    StreamError,
+    StreamReset,
     UserItemProgressUpdatedEvent,
 )
 from aioaudiobookshelf.schema.library import LibraryItemExpanded
 from aioaudiobookshelf.schema.media_progress import MediaProgress
+from aioaudiobookshelf.schema.streams import Stream, StreamProgress
 from aioaudiobookshelf.schema.user import User, UserType
 
 from .authors import AuthorsClient
@@ -88,6 +91,7 @@ class SocketClient:
         self.set_user_callbacks()
         self.set_podcast_episode_download_callbacks()
         self.set_refresh_token_expired_callback()
+        self.set_stream_callbacks()
 
     def set_item_callbacks(
         self,
@@ -127,6 +131,24 @@ class SocketClient:
         """Set refresh token expired callback."""
         self.on_refresh_token_expired = on_refresh_token_expired
 
+    def set_stream_callbacks(
+        self,
+        *,
+        on_stream_open: Callable[[Stream], Any] | None = None,
+        on_stream_closed: Callable[[str], Any] | None = None,
+        on_stream_progress: Callable[[StreamProgress], Any] | None = None,
+        on_stream_ready: Callable[[], Any] | None = None,
+        on_stream_reset: Callable[[StreamReset], Any] | None = None,
+        on_stream_error: Callable[[StreamError], Any] | None = None,
+    ) -> None:
+        """Set stream callback."""
+        self.on_stream_open = on_stream_open
+        self.on_stream_closed = on_stream_closed
+        self.on_stream_progress = on_stream_progress
+        self.on_stream_ready = on_stream_ready
+        self.on_stream_reset = on_stream_reset
+        self.on_stream_error = on_stream_error
+
     async def init_client(self) -> None:
         """Initialize the client."""
         self.client.on("connect", handler=self._on_connect)
@@ -142,6 +164,13 @@ class SocketClient:
         self.client.on("items_updated", handler=self._on_items_updated)
 
         self.client.on("episode_download_finished", handler=self._on_episode_download_finished)
+
+        self.client.on("stream_open", handler=self._on_stream_open)
+        self.client.on("stream_closed", handler=self._on_stream_closed)
+        self.client.on("stream_progress", handler=self._on_stream_progress)
+        self.client.on("stream_ready", handler=self._on_stream_ready)
+        self.client.on("stream_reset", handler=self._on_stream_reset)
+        self.client.on("stream_error", handler=self._on_stream_error)
 
         await self.client.connect(url=self.session_config.url)
 
@@ -209,3 +238,27 @@ class SocketClient:
     async def _on_episode_download_finished(self, data: dict[str, Any]) -> None:
         if self.on_episode_download_finished is not None:
             await self.on_episode_download_finished(PodcastEpisodeDownload.from_dict(data))
+
+    async def _on_stream_open(self, data: dict[str, Any]) -> None:
+        if self.on_stream_open is not None:
+            await self.on_stream_open(Stream.from_dict(data))
+
+    async def _on_stream_closed(self, stream_id: str) -> None:
+        if self.on_stream_closed is not None:
+            await self.on_stream_closed(stream_id)
+
+    async def _on_stream_progress(self, data: dict[str, Any]) -> None:
+        if self.on_stream_progress is not None:
+            await self.on_stream_progress(StreamProgress.from_dict(data))
+
+    async def _on_stream_ready(self) -> None:
+        if self.on_stream_ready is not None:
+            await self.on_stream_ready()
+
+    async def _on_stream_reset(self, data: dict[str, Any]) -> None:
+        if self.on_stream_reset is not None:
+            await self.on_stream_reset(StreamReset.from_dict(data))
+
+    async def _on_stream_error(self, data: dict[str, Any]) -> None:
+        if self.on_stream_error is not None:
+            await self.on_stream_error(StreamError.from_dict(data))

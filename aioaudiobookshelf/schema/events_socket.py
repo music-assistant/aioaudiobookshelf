@@ -44,3 +44,19 @@ class LibraryItemRemoved(_BaseModel):
     """LibraryItemRemoved."""
 
     id_: Annotated[str, Alias("id")]
+
+
+@dataclass(kw_only=True)
+class StreamReset(_BaseModel):
+    """StreamReset."""
+
+    start_time: Annotated[float, Alias("startTime")]
+    stream_id: Annotated[str, Alias("streamId")]
+
+
+@dataclass(kw_only=True)
+class StreamError(_BaseModel):
+    """StreamError."""
+
+    id_: Annotated[str, Alias("id")]
+    error: str
