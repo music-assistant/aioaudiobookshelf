@@ -31,3 +31,7 @@ class ServiceUnavailableError(Exception):
 
 class SessionNotFoundError(Exception):
     """Specified session was not found."""
+
+
+class SessionSyncError(Exception):
+    """Error while syncing (a) session(s)."""

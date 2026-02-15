@@ -1,12 +1,12 @@
 """Calls to /api/session."""
 
 from aioaudiobookshelf.client._base import BaseClient
-from aioaudiobookshelf.exceptions import ApiError, SessionNotFoundError
+from aioaudiobookshelf.exceptions import ApiError, SessionNotFoundError, SessionSyncError
 from aioaudiobookshelf.schema.calls_session import (
     CloseOpenSessionsParameters,
     SyncOpenSessionParameters,
 )
-from aioaudiobookshelf.schema.session import PlaybackSessionExpanded
+from aioaudiobookshelf.schema.session import PlaybackSession, PlaybackSessionExpanded
 
 
 class SessionClient(BaseClient):
@@ -14,7 +14,27 @@ class SessionClient(BaseClient):
 
     # get_all_session # admin
     # delete session
-    # sync local session(s)
+
+    async def sync_local_sessions(self, *, playback_sessions: list[PlaybackSession]) -> None:
+        """Sync/ create a local session."""
+        try:
+            await self._post(
+                "/api/session/local-all",
+                data={
+                    "sessions": [
+                        playback_session.to_dict() for playback_session in playback_sessions
+                    ]
+                },
+            )
+        except ApiError as err:
+            raise SessionSyncError from err
+
+    async def sync_local_session(self, *, playback_session: PlaybackSession) -> None:
+        """Sync/ create a local session."""
+        try:
+            await self._post("/api/session/local", data=playback_session.to_dict())
+        except ApiError as err:
+            raise SessionSyncError from err
 
     async def get_open_session(self, *, session_id: str) -> PlaybackSessionExpanded:
         """Get open session."""
@@ -37,7 +57,7 @@ class SessionClient(BaseClient):
         try:
             await self._post(f"/api/session/{session_id}/sync", data=parameters.to_dict())
         except ApiError as err:
-            raise SessionNotFoundError from err
+            raise SessionSyncError from err
 
     async def close_open_session(
         self, *, session_id: str, parameters: CloseOpenSessionsParameters | None = None
