@@ -83,7 +83,7 @@ class BookMetadataExpanded(BookMetadata, BookMetadataMinified):
 class _BookBase(_BaseModel):
     """_BookBase."""
 
-    tags: list[str]
+    tags: list[str] | None = None
     cover_path: Annotated[str | None, Alias("coverPath")] = None
 
 

@@ -105,7 +105,7 @@ class Podcast(_PodcastBase):
 
     library_item_id: Annotated[str, Alias("libraryItemId")]
     metadata: PodcastMetadata
-    tags: list[str]
+    tags: list[str] | None = None
     episodes: list[PodcastEpisode]
 
 
