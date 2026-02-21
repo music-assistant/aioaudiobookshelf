@@ -123,11 +123,11 @@ class BaseClient:
             return b""
         raise ApiError(f"API GET call to {endpoint} failed.")
 
-    async def _patch(self, endpoint: str, data: dict[str, Any] | None = None) -> None:
+    async def _patch(self, endpoint: str, data: dict[str, Any] | None = None) -> bytes:
         """PATCH request to abs api."""
 
-        async def _request() -> None:
-            await self.session_config.session.patch(
+        async def _request() -> ClientResponse:
+            return await self.session_config.session.patch(
                 f"{self.session_config.url}/{endpoint}",
                 json=data,
                 ssl=self.session_config.verify_ssl,
@@ -137,7 +137,9 @@ class BaseClient:
             )
 
         try:
-            await _request()
+            response = await _request()
+            if response.content_type == "application/json" and response.status == 200:
+                return await response.read()
         except ClientResponseError as exc:
             if exc.code == 401:
                 if self.session_config.auto_refresh:
@@ -151,12 +153,13 @@ class BaseClient:
                     raise AccessTokenExpiredError from exc
             else:
                 raise ApiError(f"API PATCH call to {endpoint} failed.") from exc
+        return b""
 
-    async def _delete(self, endpoint: str) -> None:
+    async def _delete(self, endpoint: str) -> bytes:
         """DELETE request to abs api."""
 
-        async def _request() -> None:
-            await self.session_config.session.delete(
+        async def _request() -> ClientResponse:
+            return await self.session_config.session.delete(
                 f"{self.session_config.url}/{endpoint}",
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
@@ -165,7 +168,9 @@ class BaseClient:
             )
 
         try:
-            await _request()
+            response = await _request()
+            if response.content_type == "application/json" and response.status == 200:
+                return await response.read()
         except ClientResponseError as exc:
             if exc.code == 401:
                 if self.session_config.auto_refresh:
@@ -179,6 +184,7 @@ class BaseClient:
                     raise AccessTokenExpiredError from exc
             else:
                 raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
+        return b""
 
     async def refresh(self) -> None:
         """Refresh tokens."""
