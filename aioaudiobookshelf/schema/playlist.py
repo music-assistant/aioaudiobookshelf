@@ -20,7 +20,7 @@ class PlaylistItem(_BaseModel):
 
 
 @dataclass(kw_only=True)
-class PlaylistItemExpanded(_BaseModel):
+class PlaylistItemExpanded(PlaylistItem):
     """PlaylistExpanded."""
 
     class Config(PlaylistItem.Config):
@@ -44,7 +44,6 @@ class PlaylistItemExpandedPodcast(PlaylistItemExpanded):
     """PlaylistItemExpandedPodcast."""
 
     library_item: Annotated[LibraryItemMinifiedPodcast, Alias("libraryItem")]
-    episode_id: Annotated[str, Alias("episodeId")]
     episode: PodcastEpisodeExpanded
 
 
