@@ -1,6 +1,9 @@
 """Params and responses for playlists."""
 
 from dataclasses import dataclass, field
+from typing import Annotated
+
+from mashumaro.types import Alias
 
 from aioaudiobookshelf.schema.playlist import PlaylistExpanded, PlaylistItem
 
@@ -20,7 +23,7 @@ class UpdatePlaylistParameters(_BaseModel):
 
     name: str
     description: str | None = None
-    cover_path: str | None = None
+    cover_path: Annotated[str | None, Alias("coverPath")] = None
     items: list[PlaylistItem] = field(default_factory=list)
 
 
@@ -28,7 +31,7 @@ class UpdatePlaylistParameters(_BaseModel):
 class CreatePlaylistParameters(UpdatePlaylistParameters):
     """CreatePlaylistParameters."""
 
-    library_id: str
+    library_id: Annotated[str, Alias("libraryId")]
 
 
 @dataclass(kw_only=True)
