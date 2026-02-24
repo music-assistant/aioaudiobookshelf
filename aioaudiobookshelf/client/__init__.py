@@ -23,6 +23,7 @@ from aioaudiobookshelf.schema.events_socket import (
 )
 from aioaudiobookshelf.schema.library import LibraryItemExpanded
 from aioaudiobookshelf.schema.media_progress import MediaProgress
+from aioaudiobookshelf.schema.playlist import PlaylistExpanded
 from aioaudiobookshelf.schema.streams import Stream, StreamProgress
 from aioaudiobookshelf.schema.user import User, UserType
 
@@ -92,6 +93,7 @@ class SocketClient:
         self.set_podcast_episode_download_callbacks()
         self.set_refresh_token_expired_callback()
         self.set_stream_callbacks()
+        self.set_playlist_callbacks()
 
     def set_item_callbacks(
         self,
@@ -149,6 +151,18 @@ class SocketClient:
         self.on_stream_reset = on_stream_reset
         self.on_stream_error = on_stream_error
 
+    def set_playlist_callbacks(
+        self,
+        *,
+        on_playlist_added: Callable[[PlaylistExpanded], Any] | None = None,
+        on_playlist_updated: Callable[[PlaylistExpanded], Any] | None = None,
+        on_playlist_removed: Callable[[PlaylistExpanded], Any] | None = None,
+    ) -> None:
+        """Set playlist callbacks."""
+        self.on_playlist_added = on_playlist_added
+        self.on_playlist_updated = on_playlist_updated
+        self.on_playlist_removed = on_playlist_removed
+
     async def init_client(self) -> None:
         """Initialize the client."""
         self.client.on("connect", handler=self._on_connect)
@@ -171,6 +185,10 @@ class SocketClient:
         self.client.on("stream_ready", handler=self._on_stream_ready)
         self.client.on("stream_reset", handler=self._on_stream_reset)
         self.client.on("stream_error", handler=self._on_stream_error)
+
+        self.client.on("playlist_added", handler=self._on_playlist_added)
+        self.client.on("playlist_updated", handler=self._on_playlist_updated)
+        self.client.on("playlist_removed", handler=self._on_playlist_removed)
 
         await self.client.connect(url=self.session_config.url)
 
@@ -262,3 +280,15 @@ class SocketClient:
     async def _on_stream_error(self, data: dict[str, Any]) -> None:
         if self.on_stream_error is not None:
             await self.on_stream_error(StreamError.from_dict(data))
+
+    async def _on_playlist_added(self, data: dict[str, Any]) -> None:
+        if self.on_playlist_added is not None:
+            await self.on_playlist_added(PlaylistExpanded.from_dict(data))
+
+    async def _on_playlist_updated(self, data: dict[str, Any]) -> None:
+        if self.on_playlist_updated is not None:
+            await self.on_playlist_updated(PlaylistExpanded.from_dict(data))
+
+    async def _on_playlist_removed(self, data: dict[str, Any]) -> None:
+        if self.on_playlist_removed is not None:
+            await self.on_playlist_removed(PlaylistExpanded.from_dict(data))
