@@ -64,7 +64,7 @@ class AudioFile(_BaseModel):
     channels: int
     channel_layout: Annotated[str, Alias("channelLayout")]
     embedded_cover_art: Annotated[str | None, Alias("embeddedCoverArt")] = None
-    mime_type: Annotated[str, Alias("mimeType")]
+    mime_type: Annotated[str | None, Alias("mimeType")] = None
     # if part of a book
     # chapters: list[BookChapter]
     # id3 tags:
