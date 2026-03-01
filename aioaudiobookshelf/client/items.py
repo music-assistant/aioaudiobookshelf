@@ -1,6 +1,7 @@
 """Calls to /api/items."""
 
 from aioaudiobookshelf.client._base import BaseClient
+from aioaudiobookshelf.exceptions import NotFoundError
 from aioaudiobookshelf.schema.calls_items import (
     LibraryItemsBatchBookResponse,
     LibraryItemsBatchParameters,
@@ -91,8 +92,9 @@ class ItemsClient(BaseClient):
         self, *, item_ids: list[str] | LibraryItemsBatchParameters
     ) -> list[LibraryItemExpandedBook]:
         """Get multiple library items at once. Always expanded."""
-        data = await self._get_libray_item_batch(item_ids=item_ids)
-        if not data:
+        try:
+            data = await self._get_libray_item_batch(item_ids=item_ids)
+        except NotFoundError:
             return []
         return LibraryItemsBatchBookResponse.from_json(data).library_items
 
@@ -100,8 +102,9 @@ class ItemsClient(BaseClient):
         self, *, item_ids: list[str] | LibraryItemsBatchParameters
     ) -> list[LibraryItemExpandedPodcast]:
         """Get multiple library items at once. Always expanded."""
-        data = await self._get_libray_item_batch(item_ids=item_ids)
-        if not data:
+        try:
+            data = await self._get_libray_item_batch(item_ids=item_ids)
+        except NotFoundError:
             return []
         return LibraryItemsBatchPodcastResponse.from_json(data).library_items
 

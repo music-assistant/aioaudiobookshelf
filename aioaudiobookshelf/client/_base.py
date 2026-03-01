@@ -9,7 +9,12 @@ from aiohttp.client_exceptions import ClientResponseError
 
 if TYPE_CHECKING:
     from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import AccessTokenExpiredError, ApiError, TokenIsMissingError
+from aioaudiobookshelf.exceptions import (
+    AccessTokenExpiredError,
+    ApiError,
+    NotFoundError,
+    TokenIsMissingError,
+)
 from aioaudiobookshelf.schema.calls_login import LoginResponse
 
 
@@ -90,6 +95,8 @@ class BaseClient:
                         raise ApiError(f"API POST call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
+            elif exc.code == 404:
+                raise NotFoundError from exc
             else:
                 raise ApiError(f"API POST call to {endpoint} failed.") from exc
 
@@ -120,7 +127,7 @@ class BaseClient:
         if response.content_type == "application/json" and status == 200:
             return await response.read()
         if status == 404:
-            return b""
+            raise NotFoundError
         raise ApiError(f"API GET call to {endpoint} failed.")
 
     async def _patch(self, endpoint: str, data: dict[str, Any] | None = None) -> bytes:
@@ -151,6 +158,8 @@ class BaseClient:
                         raise ApiError(f"API PATCH call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
+            elif exc.code == 404:
+                raise NotFoundError from exc
             else:
                 raise ApiError(f"API PATCH call to {endpoint} failed.") from exc
         return b""
@@ -182,6 +191,8 @@ class BaseClient:
                         raise ApiError(f"API DELETE call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
+            elif exc.code == 404:
+                raise NotFoundError from exc
             else:
                 raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
         return b""

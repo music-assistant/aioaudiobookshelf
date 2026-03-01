@@ -29,7 +29,11 @@ class ServiceUnavailableError(Exception):
     """Raised if service is not available."""
 
 
-class SessionNotFoundError(Exception):
+class NotFoundError(Exception):
+    """Raised when we get a 404."""
+
+
+class SessionNotFoundError(NotFoundError):
     """Specified session was not found."""
 
 

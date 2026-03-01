@@ -3,6 +3,7 @@
 from collections.abc import AsyncGenerator
 
 from aioaudiobookshelf.client._base import BaseClient
+from aioaudiobookshelf.exceptions import NotFoundError
 from aioaudiobookshelf.schema.calls_me import (
     MeListeningSessionsParameters,
     MeListeningSessionsResponse,
@@ -42,8 +43,9 @@ class MeClient(BaseClient):
         endpoint = f"/api/me/progress/{item_id}"
         if episode_id is not None:
             endpoint += f"/{episode_id}"
-        response = await self._get(endpoint=endpoint)
-        if not response:
+        try:
+            response = await self._get(endpoint=endpoint)
+        except NotFoundError:
             return None
         return MediaProgress.from_json(response)
 

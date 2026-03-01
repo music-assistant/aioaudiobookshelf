@@ -69,7 +69,7 @@ class PlaylistsClient(BaseClient):
         )
         return PlaylistExpanded.from_json(data)
 
-    async def remove_item_to_playlist_batch(
+    async def remove_item_from_playlist_batch(
         self, *, playlist_id: str, items: list[PlaylistItem]
     ) -> PlaylistExpanded:
         """Remove multiple items to playlist."""
