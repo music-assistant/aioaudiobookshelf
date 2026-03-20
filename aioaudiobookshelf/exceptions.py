@@ -49,5 +49,5 @@ class SessionNotFoundError(NotFoundError):
     """Specified session was not found."""
 
 
-class SessionSyncError(Exception):
+class SessionSyncError(AbsError):
     """Error while syncing (a) session(s)."""
