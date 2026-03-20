@@ -1,35 +1,47 @@
 """Exceptions for aioaudiobookshelf."""
 
 
-class BadUserError(Exception):
+class AbsError(Exception):
+    """Base exception for aioaudiobookshelf."""
+
+
+class AbsAuthError(AbsError):
+    """Base exception for authentication and authorization errors."""
+
+
+class BadUserError(AbsAuthError):
     """Raised if this user is not suitable for the client."""
 
 
-class LoginError(Exception):
+class LoginError(AbsAuthError):
     """Exception raised if login failed."""
 
 
-class ApiError(Exception):
-    """Exception raised if call to api failed."""
-
-
-class TokenIsMissingError(Exception):
+class TokenIsMissingError(AbsAuthError):
     """Exception raised if token is missing."""
 
 
-class AccessTokenExpiredError(Exception):
+class AccessTokenExpiredError(AbsAuthError):
     """Exception raised if access token expired."""
 
 
-class RefreshTokenExpiredError(Exception):
+class RefreshTokenExpiredError(AbsAuthError):
     """Exception raised if refresh token expired."""
 
 
-class ServiceUnavailableError(Exception):
+class AbsApiError(AbsError):
+    """Base exception for API call errors."""
+
+
+class ApiError(AbsApiError):
+    """Exception raised if call to api failed."""
+
+
+class ServiceUnavailableError(AbsApiError):
     """Raised if service is not available."""
 
 
-class NotFoundError(Exception):
+class NotFoundError(AbsApiError):
     """Raised when we get a 404."""
 
 
