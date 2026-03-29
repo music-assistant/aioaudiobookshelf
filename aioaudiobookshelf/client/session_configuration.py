@@ -5,7 +5,7 @@ import logging
 from dataclasses import dataclass
 
 from aiohttp.client import DEFAULT_TIMEOUT, ClientSession, ClientTimeout
-from aiohttp.client_exceptions import ClientResponseError
+from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 
 from aioaudiobookshelf.exceptions import (
     RefreshTokenExpiredError,
@@ -78,6 +78,8 @@ class SessionConfiguration:
                     headers=self.headers_refresh_logout,
                     raise_for_status=True,
                 )
+            except ClientConnectionError as err:
+                raise ServiceUnavailableError from err
             except ClientResponseError as err:
                 if err.code == 503:
                     raise ServiceUnavailableError from err
