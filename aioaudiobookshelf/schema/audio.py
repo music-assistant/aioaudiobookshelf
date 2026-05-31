@@ -31,7 +31,8 @@ class AudioTrack(_BaseModel):
 
     index: int | None
     start_offset: Annotated[float, Alias("startOffset")]
-    duration: float
+    # null when the server could not probe the source file (e.g. unreadable media)
+    duration: float | None
     title: str
     content_url: Annotated[str, Alias("contentUrl")]
     metadata: FileMetadata | None
@@ -56,13 +57,15 @@ class AudioFile(_BaseModel):
     exclude: bool
     error: str | None = None
     format: str
+    # bit_rate / channels / channel_layout are derived from probing the media and
+    # are null when the server could not probe the source file (e.g. unreadable media)
     duration: float | None
-    bit_rate: Annotated[int, Alias("bitRate")]
+    bit_rate: Annotated[int | None, Alias("bitRate")] = None
     language: str | None = None
     codec: str
     time_base: Annotated[str, Alias("timeBase")]
-    channels: int
-    channel_layout: Annotated[str, Alias("channelLayout")]
+    channels: int | None = None
+    channel_layout: Annotated[str | None, Alias("channelLayout")] = None
     embedded_cover_art: Annotated[str | None, Alias("embeddedCoverArt")] = None
     mime_type: Annotated[str | None, Alias("mimeType")] = None
     # if part of a book
