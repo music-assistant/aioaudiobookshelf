@@ -8,6 +8,11 @@ needed for the provider will be added over time.
 
 Not all endpoints are yet implemented.
 
+## Issues
+If you are facing issues with this lib or the audiobookshelf provider, please
+use our [support repository](https://github.com/music-assistant/support) for
+reporting them.
+
 ## Releases
 Releases can be found on [pypi](https://pypi.org/project/aioaudiobookshelf/),
 and are tagged.
