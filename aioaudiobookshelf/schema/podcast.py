@@ -1,6 +1,6 @@
 """Schema for podcasts."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Annotated
 
 from mashumaro.types import Alias
@@ -40,6 +40,16 @@ PodcastMetaDataExpanded = PodcastMetadataMinified
 
 
 @dataclass(kw_only=True)
+class PodcastEpisodeChapter(_BaseModel):
+    """PodcastEpisodeChapter."""
+
+    id_: Annotated[int, Alias("id")]
+    start: float
+    end: float
+    title: str
+
+
+@dataclass(kw_only=True)
 class PodcastEpisodeEnclosure(_BaseModel):
     """PodcastEpisodeEnclosure."""
 
@@ -61,6 +71,7 @@ class _PodcastEpisodeBase(_BaseModel):
     title: str
     subtitle: str
     description: str
+    chapters: list[PodcastEpisodeChapter] = field(default_factory=list)
     pub_date: Annotated[str, Alias("pubDate")]
     published_at: Annotated[int | None, Alias("publishedAt")] = None  # ms posix epoch
     added_at: Annotated[int, Alias("addedAt")]  # ms posix epoch
