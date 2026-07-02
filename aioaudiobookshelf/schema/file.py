@@ -16,8 +16,8 @@ class FileMetadata(_BaseModel):
     ext: str
     path: str
     relative_path: Annotated[str, Alias("relPath")]
-    size: int  # in bytes
+    size: int | None = None  # in bytes
     # might not be present, see https://github.com/music-assistant/support/issues/3914
     modified_time_ms: Annotated[int | None, Alias("mtimeMs")] = None
-    changed_time_ms: Annotated[int, Alias("ctimeMs")]
-    created_time_ms: Annotated[int, Alias("birthtimeMs")] = 0  # 0 if unknown
+    changed_time_ms: Annotated[int | None, Alias("ctimeMs")]
+    created_time_ms: Annotated[int | None, Alias("birthtimeMs")] = 0  # 0 if unknown
