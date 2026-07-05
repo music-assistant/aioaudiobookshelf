@@ -14,6 +14,7 @@ from aioaudiobookshelf.exceptions import (
     ServiceUnavailableError,
     TokenIsMissingError,
 )
+from aioaudiobookshelf.schema.author import Author, AuthorExpanded
 from aioaudiobookshelf.schema.events_socket import (
     LibraryItemRemoved,
     PodcastEpisodeDownload,
@@ -94,6 +95,7 @@ class SocketClient:
         self.set_refresh_token_expired_callback()
         self.set_stream_callbacks()
         self.set_playlist_callbacks()
+        self.set_author_callbacks()
 
     def set_item_callbacks(
         self,
@@ -163,6 +165,20 @@ class SocketClient:
         self.on_playlist_updated = on_playlist_updated
         self.on_playlist_removed = on_playlist_removed
 
+    def set_author_callbacks(
+        self,
+        *,
+        on_author_added: Callable[[Author], Any] | None = None,
+        on_author_updated: Callable[[AuthorExpanded], Any] | None = None,
+        on_author_removed: Callable[[Author], Any] | None = None,
+        on_authors_added: Callable[[list[Author]], Any] | None = None,
+    ) -> None:
+        """Set author callbacks."""
+        self.on_author_added = on_author_added
+        self.on_author_updated = on_author_updated
+        self.on_author_removed = on_author_removed
+        self.on_authors_added = on_authors_added
+
     async def init_client(self) -> None:
         """Initialize the client."""
         self.client.on("connect", handler=self._on_connect)
@@ -189,6 +205,11 @@ class SocketClient:
         self.client.on("playlist_added", handler=self._on_playlist_added)
         self.client.on("playlist_updated", handler=self._on_playlist_updated)
         self.client.on("playlist_removed", handler=self._on_playlist_removed)
+
+        self.client.on("author_added", handler=self._on_author_added)
+        self.client.on("author_updated", handler=self._on_author_updated)
+        self.client.on("author_removed", handler=self._on_author_removed)
+        self.client.on("authors_added", handler=self._on_authors_added)
 
         await self.client.connect(url=self.session_config.url)
 
@@ -292,3 +313,19 @@ class SocketClient:
     async def _on_playlist_removed(self, data: dict[str, Any]) -> None:
         if self.on_playlist_removed is not None:
             await self.on_playlist_removed(PlaylistExpanded.from_dict(data))
+
+    async def _on_author_added(self, data: dict[str, Any]) -> None:
+        if self.on_author_added is not None:
+            await self.on_author_added(Author.from_dict(data))
+
+    async def _on_author_updated(self, data: dict[str, Any]) -> None:
+        if self.on_author_updated is not None:
+            await self.on_author_updated(AuthorExpanded.from_dict(data))
+
+    async def _on_author_removed(self, data: dict[str, Any]) -> None:
+        if self.on_author_removed is not None:
+            await self.on_author_removed(Author.from_dict(data))
+
+    async def _on_authors_added(self, data: list[dict[str, Any]]) -> None:
+        if self.on_authors_added is not None:
+            await self.on_authors_added([Author.from_dict(x) for x in data])
