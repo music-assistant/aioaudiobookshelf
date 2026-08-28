@@ -63,8 +63,8 @@ class LibraryFile(_BaseModel):
 class LibrarySettings(_BaseModel):
     """LibrarySettings."""
 
-    cover_aspect_ratio: Annotated[int, Alias("coverAspectRatio")]
-    disable_watcher: Annotated[bool, Alias("disableWatcher")]
+    cover_aspect_ratio: Annotated[int | None, Alias("coverAspectRatio")] = None
+    disable_watcher: Annotated[bool | None, Alias("disableWatcher")] = None
     skip_matching_media_with_asin: Annotated[bool | None, Alias("skipMatchingMediaWithAsin")] = None
     skip_matching_media_with_isbn: Annotated[bool | None, Alias("skipMatchingMediaWithIsbn")] = None
     auto_scan_cron_expression: Annotated[str | None, Alias("autoScanCronExpression")] = None
