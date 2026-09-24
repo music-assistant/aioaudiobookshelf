@@ -97,6 +97,8 @@ class SocketClient:
         self.set_playlist_callbacks()
         self.set_author_callbacks()
 
+        self._auth_retried = False
+
     def set_item_callbacks(
         self,
         *,
@@ -183,6 +185,7 @@ class SocketClient:
         """Initialize the client."""
         self.client.on("connect", handler=self._on_connect)
         self.client.on("connect_error", handler=self._on_connect_error)
+        self.client.on("auth_failed", handler=self._on_auth_failed)
 
         self.client.on("user_updated", handler=self._on_user_updated)
         self.client.on("user_item_progress_updated", handler=self._on_user_item_progress_updated)
@@ -220,6 +223,11 @@ class SocketClient:
     logout = shutdown
 
     async def _on_connect(self) -> None:
+        self._auth_retried = False
+        await self._authenticate()
+        self.logger.debug("Socket connected.")
+
+    async def _authenticate(self) -> None:
         """V2.26 and above: access token or api token."""
         if self.session_config.access_token is not None:
             token = self.session_config.access_token
@@ -228,7 +236,30 @@ class SocketClient:
                 raise TokenIsMissingError
             token = self.session_config.token
         await self.client.emit(event="auth", data=token)
-        self.logger.debug("Socket connected.")
+
+    async def _on_auth_failed(self, *_: Any) -> None:
+        # abs rejects e.g. an expired access token here, the connection itself stays up
+        if self.session_config.access_token is None:
+            self.logger.warning(
+                "Socket authentication failed, live updates are unavailable. "
+                "Audiobookshelf does not support API keys for socket connections."
+            )
+            await self.client.disconnect()
+            return
+        if self._auth_retried or not self.session_config.auto_refresh:
+            self.logger.warning("Socket authentication failed, live updates are unavailable.")
+            return
+        self._auth_retried = True
+        self.logger.debug("Socket authentication failed, refreshing token.")
+        try:
+            await self.session_config.refresh()
+        except RefreshTokenExpiredError:
+            if self.on_refresh_token_expired is None:
+                return
+            await self.on_refresh_token_expired()
+        except ServiceUnavailableError:
+            return
+        await self._authenticate()
 
     async def _on_connect_error(self, *_: Any) -> None:
         if not self.session_config.auto_refresh or self.session_config.access_token is None:

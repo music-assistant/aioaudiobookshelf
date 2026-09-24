@@ -67,9 +67,11 @@ class SessionConfiguration:
 
         v2.26 and above
         """
-        if self.__refresh_lock.locked():
-            return
+        access_token = self.access_token
         async with self.__refresh_lock:
+            if self.access_token != access_token:
+                # refreshed or authenticated by a concurrent caller
+                return
             try:
                 endpoint = "auth/refresh"
                 response = await self.session.post(

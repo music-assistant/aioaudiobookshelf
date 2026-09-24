@@ -123,6 +123,13 @@ ignore = [
 
 select = ["ALL"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+  "S105", # fake tokens in tests
+  "S106", # fake tokens in tests
+  "SLF001", # triggering socket events
+]
+
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 mark-parentheses = false
@@ -132,6 +139,11 @@ known-first-party = ["music_assistant"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
 
 [tool.bumpver]
 current_version = "0.1.25"
