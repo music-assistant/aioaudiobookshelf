@@ -65,14 +65,20 @@ class LibrariesClient(BaseClient):
         response_cls_minified: type[ResponseMinified],
         response_cls: type[ResponseNormal],
         filter_str: str | None = None,
+        paginated: bool = True,
     ) -> AsyncGenerator[ResponseMinified | ResponseNormal]:
         page_cnt = 0
-        params: dict[str, int | str] = {
-            "minified": int(minified),
-            "limit": self.session_config.pagination_items_per_page,
-        }
+        params: dict[str, int | str] = {"minified": int(minified)}
         if filter_str is not None:
             params["filter"] = filter_str
+        if not paginated:
+            response = await self._get(endpoint, params)
+            if minified:
+                yield response_cls_minified.from_json(response)
+            else:
+                yield response_cls.from_json(response)
+            return
+        params["limit"] = self.session_config.pagination_items_per_page
         while True:
             params["page"] = page_cnt
             response = await self._get(endpoint, params)
@@ -137,6 +143,8 @@ class LibrariesClient(BaseClient):
             minified=minified,
             response_cls=LibraryCollectionsMinifiedResponse,
             response_cls_minified=LibraryCollectionsMinifiedResponse,
+            # abs' pagination of collections returns all remaining items from page 1 on
+            paginated=False,
         ):
             yield result
 
@@ -153,6 +161,8 @@ class LibrariesClient(BaseClient):
             minified=False,  # there is no minified version
             response_cls=LibraryPlaylistsResponse,
             response_cls_minified=LibraryPlaylistsResponse,
+            # abs' pagination of playlists returns all remaining items from page 1 on
+            paginated=False,
         ):
             yield result
 
