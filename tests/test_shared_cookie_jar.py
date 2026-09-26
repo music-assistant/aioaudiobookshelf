@@ -12,8 +12,7 @@ from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 
 Server = Callable[[web.Application], Awaitable[TestServer]]
 
-# which refresh token abs ended up using, per call
-SEEN: list[str | None] = []
+SEEN = web.AppKey("seen", list)
 
 
 def _answer() -> web.Response:
@@ -25,21 +24,25 @@ def _answer() -> web.Response:
 
 async def _refresh(request: web.Request) -> web.Response:
     # abs' /auth/refresh lets the header override the cookie, see its Auth.js
-    SEEN.append(request.headers.get("x-refresh-token") or request.cookies.get("refresh_token"))
+    request.app[SEEN].append(
+        request.headers.get("x-refresh-token") or request.cookies.get("refresh_token")
+    )
     return _answer()
 
 
 async def _logout(request: web.Request) -> web.Response:
     # abs' /logout prefers the cookie, which is the whole problem
-    SEEN.append(request.cookies.get("refresh_token") or request.headers.get("x-refresh-token"))
+    request.app[SEEN].append(
+        request.cookies.get("refresh_token") or request.headers.get("x-refresh-token")
+    )
     return _answer()
 
 
 @pytest.fixture
 async def abs_server(aiohttp_server: Server) -> TestServer:
     """Serve an abs which reports which refresh token it was given."""
-    SEEN.clear()
     app = web.Application()
+    app[SEEN] = []
     app.router.add_post("/auth/refresh", _refresh)
     app.router.add_post("/logout", _logout)
     return await aiohttp_server(app)
@@ -83,7 +86,7 @@ async def test_refresh_was_never_at_risk(
     ):
         await session_config.refresh()
 
-    assert SEEN == ["ours"]
+    assert abs_server.app[SEEN] == ["ours"]
 
 
 async def test_logout_uses_our_token_not_the_jars(
@@ -92,7 +95,7 @@ async def test_logout_uses_our_token_not_the_jars(
     """Abs prefers the cookie here, so a stale one would end the other instance's session."""
     await _client(_session_config(abs_server, shared_session)).logout()
 
-    assert SEEN == ["ours"]
+    assert abs_server.app[SEEN] == ["ours"]
 
 
 async def test_abs_own_cookie_does_not_take_over(
@@ -104,4 +107,4 @@ async def test_abs_own_cookie_does_not_take_over(
     await client.logout()
     await client.logout()
 
-    assert SEEN == ["ours", "ours"]
+    assert abs_server.app[SEEN] == ["ours", "ours"]
