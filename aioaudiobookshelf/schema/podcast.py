@@ -103,7 +103,7 @@ class _PodcastBase(_BaseModel):
 
     cover_path: Annotated[str | None, Alias("coverPath")] = None
     auto_download_episodes: Annotated[bool, Alias("autoDownloadEpisodes")]
-    auto_download_schedule: Annotated[str, Alias("autoDownloadSchedule")]
+    auto_download_schedule: Annotated[str | None, Alias("autoDownloadSchedule")] = None
     # None is not documented
     last_episode_check_ms: Annotated[int | None, Alias("lastEpisodeCheck")] = None
     max_episodes_to_keep: Annotated[int, Alias("maxEpisodesToKeep")]  # 0 = all

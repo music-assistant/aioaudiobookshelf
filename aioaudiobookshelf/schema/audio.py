@@ -56,7 +56,7 @@ class AudioFile(_BaseModel):
     manually_verified: Annotated[bool, Alias("manuallyVerified")]
     exclude: bool
     error: str | None = None
-    format: str
+    format: str | None = None
     # bit_rate / channels / channel_layout are derived from probing the media and
     # are null when the server could not probe the source file (e.g. unreadable media)
     duration: float | None

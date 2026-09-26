@@ -9,7 +9,7 @@ from aioaudiobookshelf.schema.book import BookMetadata
 from aioaudiobookshelf.schema.calls_login import LoginResponse
 from aioaudiobookshelf.schema.events_socket import AuthorRemoved
 from aioaudiobookshelf.schema.library import Library, LibraryIcons, LibraryItemPodcast
-from aioaudiobookshelf.schema.podcast import PodcastEpisode, PodcastMetadata
+from aioaudiobookshelf.schema.podcast import Podcast, PodcastEpisode, PodcastMetadata
 from aioaudiobookshelf.schema.server import ServerSettings
 from aioaudiobookshelf.schema.session import PlaybackSession
 
@@ -215,14 +215,16 @@ def test_podcast_episode_carries_its_audio_file() -> None:
                 "updatedAt": 1,
                 "manuallyVerified": False,
                 "exclude": False,
-                "format": "mp3",
                 "duration": None,
             },
         }
     )
 
     assert episode.audio_file is not None
+    # everything abs derives from probing the file, which it could not do here
     assert episode.audio_file.codec is None
+    assert episode.audio_file.time_base is None
+    assert episode.audio_file.format is None
     assert episode.audio_file.metadata.changed_time_ms is None
 
 
@@ -296,3 +298,20 @@ def test_author_removed_payload() -> None:
     removed = AuthorRemoved.from_dict({"id": "author1", "libraryId": "library1"})
 
     assert (removed.id_, removed.library_id) == ("author1", "library1")
+
+
+def test_podcast_without_a_download_schedule() -> None:
+    """Abs nulls the column whenever the payload is not a string, see its models/Podcast.js."""
+    podcast = Podcast.from_dict(
+        {
+            "libraryItemId": "item1",
+            "metadata": _podcast_metadata(),
+            "episodes": [],
+            "autoDownloadEpisodes": False,
+            "autoDownloadSchedule": None,
+            "maxEpisodesToKeep": 0,
+            "maxNewEpisodesToDownload": 0,
+        }
+    )
+
+    assert podcast.auto_download_schedule is None
