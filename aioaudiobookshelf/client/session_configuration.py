@@ -98,13 +98,15 @@ class SessionConfiguration:
                 ssl=self.verify_ssl,
                 headers=self.headers_refresh_logout,
                 raise_for_status=True,
+                timeout=self.timeout,
             )
-        except ClientConnectionError as err:
+        except (ClientConnectionError, TimeoutError) as err:
             raise ServiceUnavailableError from err
         except ClientResponseError as err:
-            if err.code == 503:
-                raise ServiceUnavailableError from err
-            raise RefreshTokenExpiredError from err
+            if err.status == 401:
+                raise RefreshTokenExpiredError from err
+            # e.g. abs' rate limit, or a proxy while abs restarts
+            raise ServiceUnavailableError from err
         data = await response.read()
         refresh_response = RefreshResponse.from_json(data)
         assert refresh_response.user.access_token is not None

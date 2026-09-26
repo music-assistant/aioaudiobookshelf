@@ -4,8 +4,8 @@ import logging
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from aiohttp.client import ClientResponse
-from aiohttp.client_exceptions import ClientResponseError
+from aiohttp.client import ClientResponse, ClientTimeout
+from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 
 if TYPE_CHECKING:
     from aioaudiobookshelf.client.session_configuration import SessionConfiguration
@@ -13,9 +13,13 @@ from aioaudiobookshelf.exceptions import (
     AccessTokenExpiredError,
     ApiError,
     NotFoundError,
+    ServiceUnavailableError,
     TokenIsMissingError,
 )
 from aioaudiobookshelf.schema.calls_login import LoginResponse
+
+# logout is best effort, it must not stall a shutdown
+LOGOUT_TIMEOUT = ClientTimeout(total=10)
 
 
 class BaseClient:
@@ -203,13 +207,19 @@ class BaseClient:
 
     async def logout(self) -> None:
         """Logout client."""
-        if self.session_config.refresh_token is not None:
-            # v2.26 and above
-            await self.session_config.session.post(
-                f"{self.session_config.url}/logout",
-                ssl=self.session_config.verify_ssl,
-                headers=self.session_config.headers_refresh_logout,
-                raise_for_status=True,
-            )
-        else:
-            await self._post("logout")
+        try:
+            if self.session_config.refresh_token is not None:
+                # v2.26 and above
+                await self.session_config.session.post(
+                    f"{self.session_config.url}/logout",
+                    ssl=self.session_config.verify_ssl,
+                    headers=self.session_config.headers_refresh_logout,
+                    raise_for_status=True,
+                    timeout=LOGOUT_TIMEOUT,
+                )
+            else:
+                await self._post("logout")
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
+        except ClientResponseError as err:
+            raise ApiError("Logout failed.") from err
