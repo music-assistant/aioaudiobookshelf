@@ -29,15 +29,17 @@ class FakeSocketIoClient:
         self.handlers: dict[str, Handler] = {}
         self.emitted: list[tuple[str, Any]] = []
         self.url: str | None = None
+        self.socketio_path: str | None = None
         self.disconnects = 0
 
     def on(self, event: str, handler: Handler) -> None:
         """Register an event handler."""
         self.handlers[event] = handler
 
-    async def connect(self, url: str) -> None:
+    async def connect(self, url: str, socketio_path: str) -> None:
         """Connect and raise the connect event, as socketio does."""
         self.url = url
+        self.socketio_path = socketio_path
         await self.trigger("connect")
 
     async def disconnect(self) -> None:
@@ -63,8 +65,9 @@ class FakeSocketIoClient:
 
 
 def _session_config(refresh: Any = None, **kwargs: Any) -> SessionConfiguration:
+    kwargs.setdefault("url", "http://abs.local")
     session_config = SessionConfiguration(
-        session=Mock(), url="http://abs.local", logger=logging.getLogger(__name__), **kwargs
+        session=Mock(), logger=logging.getLogger(__name__), **kwargs
     )
     if refresh is not None:
         session_config.refresh = refresh  # type: ignore[method-assign]
@@ -225,3 +228,19 @@ async def test_api_key_auth_failed_disconnects() -> None:
     await socket_io.auth_failed()
 
     assert socket_io.disconnects == 1
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("http://abs.local", "/socket.io"),
+        ("http://abs.local:13378", "/socket.io"),
+        ("https://example.com/abs", "/abs/socket.io"),
+        ("https://example.com/audiobooks/", "/audiobooks/socket.io"),
+    ],
+)
+async def test_socket_path_follows_the_url(url: str, expected: str) -> None:
+    """A base path in the configured url has to reach the socket as well."""
+    socket_io = await _socket(_session_config(url=url, access_token="access1"))
+
+    assert socket_io.socketio_path == expected
