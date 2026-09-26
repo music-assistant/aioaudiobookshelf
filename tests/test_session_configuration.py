@@ -51,11 +51,11 @@ def _session_config(session: FakeSession) -> SessionConfiguration:
 
 
 async def _gather_refreshes(
-    session: FakeSession, refresh: Callable[[], Coroutine[Any, Any, Any]], count: int = 2
+    session: FakeSession, refresh: Callable[[], Coroutine[Any, Any, Any]]
 ) -> list[Any]:
-    """Start concurrent refreshes, release the request, and collect their outcomes."""
+    """Start two concurrent refreshes, release the request, and collect their outcomes."""
     tasks = []
-    for _ in range(count):
+    for _ in range(2):
         tasks.append(asyncio.create_task(refresh()))
         await asyncio.sleep(0)
     session.release.set()
