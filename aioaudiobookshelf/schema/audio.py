@@ -37,7 +37,7 @@ class AudioTrack(_BaseModel):
     content_url: Annotated[str, Alias("contentUrl")]
     metadata: FileMetadata | None
     # is missing if part of library...
-    mime_type: str | None = None
+    mime_type: Annotated[str | None, Alias("mimeType")] = None
 
 
 @dataclass(kw_only=True)
@@ -62,8 +62,8 @@ class AudioFile(_BaseModel):
     duration: float | None
     bit_rate: Annotated[int | None, Alias("bitRate")] = None
     language: str | None = None
-    codec: str
-    time_base: Annotated[str, Alias("timeBase")]
+    codec: str | None = None
+    time_base: Annotated[str | None, Alias("timeBase")] = None
     channels: int | None = None
     channel_layout: Annotated[str | None, Alias("channelLayout")] = None
     embedded_cover_art: Annotated[str | None, Alias("embeddedCoverArt")] = None

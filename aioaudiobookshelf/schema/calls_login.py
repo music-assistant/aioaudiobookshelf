@@ -23,7 +23,7 @@ class LoginResponse(DataClassJSONMixin):
     """Response to login request."""
 
     user: User
-    user_default_library_id: Annotated[str, Alias("userDefaultLibraryId")]
+    user_default_library_id: Annotated[str | None, Alias("userDefaultLibraryId")] = None
     server_settings: Annotated[ServerSettings, Alias("serverSettings")]
     source: Annotated[str, Alias("Source")]
 

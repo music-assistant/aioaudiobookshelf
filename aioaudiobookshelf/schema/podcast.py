@@ -82,7 +82,7 @@ class _PodcastEpisodeBase(_BaseModel):
 class PodcastEpisode(_PodcastEpisodeBase):
     """PodcastEpisode."""
 
-    audio_file: AudioFile | None = None
+    audio_file: Annotated[AudioFile | None, Alias("audioFile")] = None
     enclosure: PodcastEpisodeEnclosure | None = None
 
 
@@ -93,7 +93,7 @@ class PodcastEpisodeExpanded(_PodcastEpisodeBase):
     audio_track: Annotated[AudioTrack, Alias("audioTrack")]
     duration: float
     size: int
-    audio_file: AudioFile | None = None
+    audio_file: Annotated[AudioFile | None, Alias("audioFile")] = None
     enclosure: PodcastEpisodeEnclosure | None = None
 
 
