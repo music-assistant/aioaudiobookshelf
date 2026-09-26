@@ -54,4 +54,4 @@ class AuthorsClient(BaseClient):
         params = {"width": width, "format": format_.value, "raw": int(raw)}
         if height:
             params["height"] = height
-        return await self._get(endpoint, params=params)
+        return await self._get(endpoint, params=params, json_response=False)

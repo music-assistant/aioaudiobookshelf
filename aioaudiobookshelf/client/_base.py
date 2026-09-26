@@ -2,6 +2,7 @@
 
 import logging
 from abc import abstractmethod
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 
 from aiohttp.client import ClientResponse, ClientTimeout
@@ -20,6 +21,14 @@ from aioaudiobookshelf.schema.calls_login import LoginResponse
 
 # logout is best effort, it must not stall a shutdown
 LOGOUT_TIMEOUT = ClientTimeout(total=10)
+
+
+async def _json_body(response: ClientResponse) -> bytes:
+    """Read a json answer, or free the connection if there is none."""
+    if response.content_type == "application/json" and response.status == 200:
+        return await response.read()
+    response.release()
+    return b""
 
 
 class BaseClient:
@@ -68,6 +77,17 @@ class BaseClient:
     def _verify_user(self) -> None:
         """Verify if user has enough permissions for endpoints in use."""
 
+    async def _retry(
+        self, request: Callable[[], Awaitable[ClientResponse]], error_message: str
+    ) -> ClientResponse:
+        """Repeat a request once the tokens were refreshed."""
+        try:
+            return await request()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
+        except ClientResponseError as err:
+            raise ApiError(error_message) from err
+
     async def _post(
         self,
         endpoint: str,
@@ -87,16 +107,14 @@ class BaseClient:
 
         try:
             response = await _request()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
         except ClientResponseError as exc:
             if exc.status == 401:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
-                    # TODO: remove redundant clause
-                    try:
-                        response = await _request()
-                    except ClientResponseError as inner_exc:
-                        raise ApiError(f"API POST call to {endpoint} failed.") from inner_exc
+                    response = await self._retry(_request, f"API POST call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
             elif exc.status == 404:
@@ -106,8 +124,14 @@ class BaseClient:
 
         return await response.read()
 
-    async def _get(self, endpoint: str, params: dict[str, str | int] | None = None) -> bytes:
-        """GET request to abs api."""
+    async def _get(
+        self,
+        endpoint: str,
+        params: dict[str, str | int] | None = None,
+        *,
+        json_response: bool = True,
+    ) -> bytes:
+        """GET request to abs api. Images and the like are not json."""
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.get(
@@ -118,18 +142,23 @@ class BaseClient:
                 timeout=self.session_config.timeout,
             )
 
-        response = await _request()
-        if response.status == 401:
-            if self.session_config.auto_refresh:
+        try:
+            response = await _request()
+            if response.status == 401:
+                if not self.session_config.auto_refresh:
+                    response.release()
+                    raise AccessTokenExpiredError
                 self.logger.debug("Auto refreshing tokens.")
+                response.release()
                 await self.refresh()
                 response = await _request()
-            else:
-                raise AccessTokenExpiredError
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
 
         status = response.status
-        if response.content_type == "application/json" and status == 200:
+        if status == 200 and (not json_response or response.content_type == "application/json"):
             return await response.read()
+        response.release()
         if status == 404:
             raise NotFoundError
         raise ApiError(f"API GET call to {endpoint} failed.")
@@ -149,24 +178,21 @@ class BaseClient:
 
         try:
             response = await _request()
-            if response.content_type == "application/json" and response.status == 200:
-                return await response.read()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
         except ClientResponseError as exc:
             if exc.status == 401:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
-                    try:
-                        await _request()
-                    except ClientResponseError as inner_exc:
-                        raise ApiError(f"API PATCH call to {endpoint} failed.") from inner_exc
+                    response = await self._retry(_request, f"API PATCH call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
             elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API PATCH call to {endpoint} failed.") from exc
-        return b""
+        return await _json_body(response)
 
     async def _delete(self, endpoint: str) -> bytes:
         """DELETE request to abs api."""
@@ -182,24 +208,21 @@ class BaseClient:
 
         try:
             response = await _request()
-            if response.content_type == "application/json" and response.status == 200:
-                return await response.read()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
         except ClientResponseError as exc:
             if exc.status == 401:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
-                    try:
-                        await _request()
-                    except ClientResponseError as inner_exc:
-                        raise ApiError(f"API DELETE call to {endpoint} failed.") from inner_exc
+                    response = await self._retry(_request, f"API DELETE call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
             elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
-        return b""
+        return await _json_body(response)
 
     async def refresh(self) -> None:
         """Refresh tokens."""
