@@ -82,6 +82,14 @@ class MeClient(BaseClient):
         if is_finished:
             self.logger.debug("Marked %s, id %s finished.", logger_item, item_id)
             return
+        if duration_seconds <= 0:
+            # abs has no duration for e.g. a podcast episode it did not probe, so there is
+            # no percentage to send, and a duration of 0 would overwrite what abs knows
+            await self._patch(endpoint, data={"currentTime": progress_seconds})
+            self.logger.debug(
+                "Updated position of %s, id %s, its duration is unknown.", logger_item, item_id
+            )
+            return
         percentage = progress_seconds / duration_seconds
         await self._patch(
             endpoint,
