@@ -127,7 +127,6 @@ select = ["ALL"]
 "tests/*" = [
   "S105", # fake tokens in tests
   "S106", # fake tokens in tests
-  "SLF001", # triggering socket events
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
