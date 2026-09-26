@@ -54,8 +54,8 @@ class PodcastEpisodeEnclosure(_BaseModel):
     """PodcastEpisodeEnclosure."""
 
     url: str
-    type_: Annotated[str, Alias("type")]
-    length: str
+    type_: Annotated[str | None, Alias("type")] = None
+    length: str | None = None
 
 
 @dataclass(kw_only=True)
@@ -65,14 +65,16 @@ class _PodcastEpisodeBase(_BaseModel):
     library_item_id: Annotated[str, Alias("libraryItemId")]
     id_: Annotated[str, Alias("id")]
     index: int | None = None
-    season: str
-    episode: str
-    episode_type: Annotated[str, Alias("episodeType")]
+    # abs leaves these null for episodes it scanned from a local file,
+    # see its scanner/PodcastScanner.js
+    season: str | None = None
+    episode: str | None = None
+    episode_type: Annotated[str | None, Alias("episodeType")] = None
     title: str
-    subtitle: str
-    description: str
+    subtitle: str | None = None
+    description: str | None = None
     chapters: list[PodcastEpisodeChapter] = field(default_factory=list)
-    pub_date: Annotated[str, Alias("pubDate")]
+    pub_date: Annotated[str | None, Alias("pubDate")] = None
     published_at: Annotated[int | None, Alias("publishedAt")] = None  # ms posix epoch
     added_at: Annotated[int, Alias("addedAt")]  # ms posix epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms posix epoch
