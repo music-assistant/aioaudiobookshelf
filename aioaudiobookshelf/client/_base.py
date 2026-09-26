@@ -214,6 +214,7 @@ class BaseClient:
                     f"{self.session_config.url}/logout",
                     ssl=self.session_config.verify_ssl,
                     headers=self.session_config.headers_refresh_logout,
+                    cookies=self.session_config.cookies_refresh_logout,
                     raise_for_status=True,
                     timeout=LOGOUT_TIMEOUT,
                 )

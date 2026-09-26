@@ -58,6 +58,19 @@ class SessionConfiguration:
             raise TokenIsMissingError("Refresh token not set.")
         return {"x-refresh-token": self.refresh_token}
 
+    @property
+    def cookies_refresh_logout(self) -> dict[str, str]:
+        """Cookie for /auth/refresh and /logout.
+
+        On /logout abs reads `req.cookies.refresh_token || req.headers['x-refresh-token']`
+        (Auth.js), so a cookie jar shared with another client of the same server would
+        end that client's session instead of ours. On /auth/refresh the header wins,
+        which was never at risk; we send the cookie there too so both stay in step.
+        """
+        if self.refresh_token is None:
+            raise TokenIsMissingError("Refresh token not set.")
+        return {"refresh_token": self.refresh_token}
+
     def __post_init__(self) -> None:
         """Post init."""
         self.url = self.url.rstrip("/")
@@ -97,6 +110,7 @@ class SessionConfiguration:
                 f"{self.url}/{endpoint}",
                 ssl=self.verify_ssl,
                 headers=self.headers_refresh_logout,
+                cookies=self.cookies_refresh_logout,
                 raise_for_status=True,
                 timeout=self.timeout,
             )
