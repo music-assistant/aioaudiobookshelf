@@ -53,7 +53,8 @@ def _delete(client: UserClient) -> Awaitable[object]:
 
 
 @pytest.mark.parametrize("call", [_get, _post, _patch, _delete])
-@pytest.mark.parametrize("session", [{"token": "api_key"}, {"access_token": "pre_v2_26"}])
+# an api key and a pre v2.26 token both live in token, an access token can stand alone
+@pytest.mark.parametrize("session", [{"token": "api_key"}, {"access_token": "access1"}])
 async def test_a_rejected_token_without_a_refresh_token(
     call: Callable[[UserClient], Awaitable[object]], session: dict[str, str]
 ) -> None:
