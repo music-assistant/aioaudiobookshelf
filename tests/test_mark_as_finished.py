@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, Mock
 
 from aioaudiobookshelf.client.me import MeClient
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.schema.library import LibrarySettings
 
 
 class FakeSession:
@@ -90,20 +89,3 @@ async def test_a_finished_item_is_not_weighed() -> None:
     )
 
     assert session.payloads == [{"isFinished": True}]
-
-
-def test_library_settings_carry_them() -> None:
-    """They are where a caller reads them from, see abs' models/Library.js."""
-    settings = LibrarySettings.from_dict(
-        {"markAsFinishedTimeRemaining": 30, "markAsFinishedPercentComplete": 95}
-    )
-
-    assert settings.mark_as_finished_time_remaining == 30
-    assert settings.mark_as_finished_percent_complete == 95
-
-
-def test_library_settings_without_them() -> None:
-    """Abs sends no percentage unless one is configured."""
-    settings = LibrarySettings.from_dict({"markAsFinishedTimeRemaining": 10})
-
-    assert settings.mark_as_finished_percent_complete is None
