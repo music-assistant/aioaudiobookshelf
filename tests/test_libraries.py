@@ -3,7 +3,7 @@
 import json
 from collections.abc import AsyncGenerator, Callable
 from typing import Any
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -24,16 +24,30 @@ def _abs_paginate(items: list[dict[str, Any]], params: dict[str, Any]) -> bytes:
     ).encode()
 
 
+class FakeSession:
+    """Stands in for the aiohttp session and pages the way abs does."""
+
+    def __init__(self, items: list[dict[str, Any]]) -> None:
+        """Init."""
+        self.items = items
+
+    async def get(self, _url: str, params: dict[str, Any], **_: Any) -> Mock:
+        """Answer a library request."""
+        return Mock(
+            status=200,
+            content_type="application/json",
+            read=AsyncMock(return_value=_abs_paginate(self.items, params)),
+        )
+
+
 def _client(items: list[dict[str, Any]]) -> LibrariesClient:
     client = LibrariesClient.__new__(LibrariesClient)
     client.session_config = SessionConfiguration(
-        session=Mock(), url="http://abs.local", pagination_items_per_page=30
+        session=FakeSession(items),  # type: ignore[arg-type]
+        url="http://abs.local",
+        access_token="access1",
+        pagination_items_per_page=30,
     )
-
-    async def get(_endpoint: str, params: dict[str, Any]) -> bytes:
-        return _abs_paginate(items, params)
-
-    client._get = get  # type: ignore[method-assign]
     return client
 
 
