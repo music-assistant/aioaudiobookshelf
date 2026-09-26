@@ -40,7 +40,7 @@ def _book_metadata() -> Payload:
         "explicit": False,
         "authors": [{"id": "author1", "name": "An Author"}],
         "narrators": ["A Narrator"],
-        "series": [],
+        "series": [{"id": "series1", "name": "A Series", "sequence": "1"}],
     }
 
 
@@ -232,6 +232,8 @@ def test_book_session_keeps_its_book_metadata() -> None:
 
     assert isinstance(session.media_metadata, BookMetadata)
     assert [author.name for author in session.media_metadata.authors] == ["An Author"]
+    assert [series.name for series in session.media_metadata.series] == ["A Series"]
+    assert session.media_metadata.narrators == ["A Narrator"]
 
 
 def test_podcast_session_keeps_its_podcast_metadata() -> None:
