@@ -78,6 +78,7 @@ async def _socket(
     session_config: SessionConfiguration,
     *,
     on_refresh_token_expired: Callable[[], Any] | None = None,
+    **user_callbacks: Any,
 ) -> FakeSocketIoClient:
     """Connect a socket client which talks to the fake instead of socketio."""
     with patch("socketio.AsyncClient", FakeSocketIoClient):
@@ -85,6 +86,8 @@ async def _socket(
     socket_client.set_refresh_token_expired_callback(
         on_refresh_token_expired=on_refresh_token_expired
     )
+    if user_callbacks:
+        socket_client.set_user_callbacks(**user_callbacks)
     await socket_client.init_client()
     assert isinstance(socket_client.client, FakeSocketIoClient)
     return socket_client.client
@@ -244,3 +247,20 @@ async def test_socket_path_follows_the_url(url: str, expected: str) -> None:
     socket_io = await _socket(_session_config(url=url, access_token="access1"))
 
     assert socket_io.socketio_path == expected
+
+
+async def test_user_session_closed_reaches_the_callback() -> None:
+    """Abs sends the id of the session it closed, see its PlaybackSessionManager.js."""
+    closed: list[str] = []
+
+    async def on_user_session_closed(session_id: str) -> None:
+        closed.append(session_id)
+
+    socket_io = await _socket(
+        _session_config(access_token="access1"),
+        on_user_session_closed=on_user_session_closed,
+    )
+
+    await socket_io.trigger("user_session_closed", "session1")
+
+    assert closed == ["session1"]
