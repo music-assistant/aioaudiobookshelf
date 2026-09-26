@@ -16,11 +16,16 @@ from aioaudiobookshelf.exceptions import (
     NotFoundError,
     ServiceUnavailableError,
     TokenIsMissingError,
+    TokenNotRenewableError,
 )
 from aioaudiobookshelf.schema.calls_login import LoginResponse
 
 # logout is best effort, it must not stall a shutdown
 LOGOUT_TIMEOUT = ClientTimeout(total=10)
+
+# abs rejects an api key or a pre v2.26 token the same way it rejects an expired
+# access token, but neither of them can be refreshed
+NOT_RENEWABLE = "Abs rejected the token and it cannot be refreshed. Is it still valid?"
 
 
 async def _json_body(response: ClientResponse) -> bytes:
@@ -111,6 +116,8 @@ class BaseClient:
             raise ServiceUnavailableError from err
         except ClientResponseError as exc:
             if exc.status == 401:
+                if self.session_config.refresh_token is None:
+                    raise TokenNotRenewableError(NOT_RENEWABLE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
@@ -145,6 +152,9 @@ class BaseClient:
         try:
             response = await _request()
             if response.status == 401:
+                if self.session_config.refresh_token is None:
+                    response.release()
+                    raise TokenNotRenewableError(NOT_RENEWABLE)
                 if not self.session_config.auto_refresh:
                     response.release()
                     raise AccessTokenExpiredError
@@ -182,6 +192,8 @@ class BaseClient:
             raise ServiceUnavailableError from err
         except ClientResponseError as exc:
             if exc.status == 401:
+                if self.session_config.refresh_token is None:
+                    raise TokenNotRenewableError(NOT_RENEWABLE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
@@ -212,6 +224,8 @@ class BaseClient:
             raise ServiceUnavailableError from err
         except ClientResponseError as exc:
             if exc.status == 401:
+                if self.session_config.refresh_token is None:
+                    raise TokenNotRenewableError(NOT_RENEWABLE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
