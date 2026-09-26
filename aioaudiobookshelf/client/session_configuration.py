@@ -8,6 +8,7 @@ from aiohttp.client import DEFAULT_TIMEOUT, ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 
 from aioaudiobookshelf.exceptions import (
+    AbsError,
     RefreshTokenExpiredError,
     ServiceUnavailableError,
     TokenIsMissingError,
@@ -61,35 +62,55 @@ class SessionConfiguration:
         """Post init."""
         self.url = self.url.rstrip("/")
         self.__refresh_lock = asyncio.Lock()
+        self.__refresh_generation = 0
+        self.__refresh_error: AbsError | None = None
 
     async def refresh(self) -> None:
         """Refresh access_token with refresh token.
 
+        Callers which arrive during a running refresh wait for it and share its
+        outcome, instead of sending a request of their own.
+
         v2.26 and above
         """
-        if self.__refresh_lock.locked():
-            return
+        generation = self.__refresh_generation
         async with self.__refresh_lock:
+            if generation != self.__refresh_generation:
+                # refreshed or authenticated by a concurrent caller
+                if self.__refresh_error is not None:
+                    raise self.__refresh_error
+                return
+            self.__refresh_error = None
             try:
-                endpoint = "auth/refresh"
-                response = await self.session.post(
-                    f"{self.url}/{endpoint}",
-                    ssl=self.verify_ssl,
-                    headers=self.headers_refresh_logout,
-                    raise_for_status=True,
-                )
-            except ClientConnectionError as err:
+                await self._request_new_tokens()
+            except AbsError as err:
+                self.__refresh_error = err
+                raise
+            finally:
+                # only now callers which entered before are done waiting
+                self.__refresh_generation += 1
+
+    async def _request_new_tokens(self) -> None:
+        try:
+            endpoint = "auth/refresh"
+            response = await self.session.post(
+                f"{self.url}/{endpoint}",
+                ssl=self.verify_ssl,
+                headers=self.headers_refresh_logout,
+                raise_for_status=True,
+            )
+        except ClientConnectionError as err:
+            raise ServiceUnavailableError from err
+        except ClientResponseError as err:
+            if err.code == 503:
                 raise ServiceUnavailableError from err
-            except ClientResponseError as err:
-                if err.code == 503:
-                    raise ServiceUnavailableError from err
-                raise RefreshTokenExpiredError from err
-            data = await response.read()
-            refresh_response = RefreshResponse.from_json(data)
-            assert refresh_response.user.access_token is not None
-            assert refresh_response.user.refresh_token is not None
-            self.access_token = refresh_response.user.access_token
-            self.refresh_token = refresh_response.user.refresh_token
+            raise RefreshTokenExpiredError from err
+        data = await response.read()
+        refresh_response = RefreshResponse.from_json(data)
+        assert refresh_response.user.access_token is not None
+        assert refresh_response.user.refresh_token is not None
+        self.access_token = refresh_response.user.access_token
+        self.refresh_token = refresh_response.user.refresh_token
 
     async def authenticate(self, *, username: str, password: str) -> None:
         """Relogin and update tokens if refresh token expired."""
@@ -101,8 +122,10 @@ class SessionConfiguration:
                 # pre v2.26
                 assert login_response.user.token is not None
                 self.token = login_response.user.token
-                return
-            assert login_response.user.access_token is not None
-            assert login_response.user.refresh_token is not None
-            self.access_token = login_response.user.access_token
-            self.refresh_token = login_response.user.refresh_token
+            else:
+                assert login_response.user.refresh_token is not None
+                self.access_token = login_response.user.access_token
+                self.refresh_token = login_response.user.refresh_token
+            # a refresh waiting for this lock shares the new tokens
+            self.__refresh_error = None
+            self.__refresh_generation += 1

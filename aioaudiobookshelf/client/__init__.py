@@ -9,9 +9,9 @@ import socketio.exceptions
 
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 from aioaudiobookshelf.exceptions import (
+    AbsError,
     BadUserError,
     RefreshTokenExpiredError,
-    ServiceUnavailableError,
     TokenIsMissingError,
 )
 from aioaudiobookshelf.schema.author import Author, AuthorExpanded
@@ -96,6 +96,8 @@ class SocketClient:
         self.set_stream_callbacks()
         self.set_playlist_callbacks()
         self.set_author_callbacks()
+
+        self._auth_retried = False
 
     def set_item_callbacks(
         self,
@@ -183,6 +185,8 @@ class SocketClient:
         """Initialize the client."""
         self.client.on("connect", handler=self._on_connect)
         self.client.on("connect_error", handler=self._on_connect_error)
+        self.client.on("auth_failed", handler=self._on_auth_failed)
+        self.client.on("init", handler=self._on_init)
 
         self.client.on("user_updated", handler=self._on_user_updated)
         self.client.on("user_item_progress_updated", handler=self._on_user_item_progress_updated)
@@ -220,6 +224,11 @@ class SocketClient:
     logout = shutdown
 
     async def _on_connect(self) -> None:
+        self._auth_retried = False
+        await self._authenticate()
+        self.logger.debug("Socket connected.")
+
+    async def _authenticate(self) -> None:
         """V2.26 and above: access token or api token."""
         if self.session_config.access_token is not None:
             token = self.session_config.access_token
@@ -228,9 +237,52 @@ class SocketClient:
                 raise TokenIsMissingError
             token = self.session_config.token
         await self.client.emit(event="auth", data=token)
-        self.logger.debug("Socket connected.")
+
+    async def _on_init(self, *_: Any) -> None:
+        # abs sends init once the socket is authenticated
+        self._auth_retried = False
+
+    async def _on_auth_failed(self, *_: Any) -> None:
+        # socketio runs handlers in their own task, so errors would go unnoticed
+        try:
+            await self._handle_auth_failed()
+        except Exception:
+            self.logger.exception("Could not handle a rejected socket authentication.")
+
+    async def _handle_auth_failed(self) -> None:
+        # abs rejects e.g. an expired access token here, the connection itself stays up
+        if self.session_config.access_token is None:
+            # a rejected api key or pre v2.26 token cannot be refreshed
+            self.logger.warning(
+                "Socket authentication failed, live updates are unavailable. "
+                "Audiobookshelf accepts only access tokens for socket connections."
+            )
+            await self.client.disconnect()
+            return
+        # not awaiting between test and set keeps concurrent events to one retry
+        if self._auth_retried or not self.session_config.auto_refresh:
+            self.logger.warning("Socket authentication failed, live updates are unavailable.")
+            return
+        self._auth_retried = True
+        self.logger.debug("Socket authentication failed, refreshing token.")
+        try:
+            await self.session_config.refresh()
+        except RefreshTokenExpiredError:
+            if self.on_refresh_token_expired is None:
+                return
+            await self.on_refresh_token_expired()
+        except AbsError:
+            return
+        await self._authenticate()
 
     async def _on_connect_error(self, *_: Any) -> None:
+        # socketio runs handlers in their own task, so errors would go unnoticed
+        try:
+            await self._handle_connect_error()
+        except Exception:
+            self.logger.exception("Could not handle a socket connection error.")
+
+    async def _handle_connect_error(self) -> None:
         if not self.session_config.auto_refresh or self.session_config.access_token is None:
             return
         # try to refresh token
@@ -240,8 +292,7 @@ class SocketClient:
         except RefreshTokenExpiredError:
             if self.on_refresh_token_expired is not None:
                 await self.on_refresh_token_expired()
-            return
-        except ServiceUnavailableError:
+        except AbsError:
             # socketio will continue trying to reconnect.
             return
 
