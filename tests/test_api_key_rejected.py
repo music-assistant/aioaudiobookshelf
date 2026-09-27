@@ -1,6 +1,5 @@
 """Tests for a token abs rejects which cannot be refreshed."""
 
-import logging
 from collections.abc import Awaitable, Callable
 from unittest.mock import AsyncMock, Mock
 
@@ -8,30 +7,28 @@ import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
 from aioaudiobookshelf.client import UserClient
-from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 from aioaudiobookshelf.exceptions import (
     AccessTokenExpiredError,
     TokenIsMissingError,
     TokenNotRenewableError,
 )
 
+from .helpers import make_client
+
 
 def _client(**kwargs: str) -> UserClient:
     error = ClientResponseError(request_info=Mock(), history=(), status=401)
     response = Mock(status=401, content_type="application/json", read=AsyncMock(return_value=b""))
-    client = UserClient.__new__(UserClient)
-    client.session_config = SessionConfiguration(
-        session=Mock(
+    return make_client(
+        UserClient,
+        Mock(
             get=AsyncMock(return_value=response),
             post=AsyncMock(side_effect=error),
             patch=AsyncMock(side_effect=error),
             delete=AsyncMock(side_effect=error),
         ),
-        url="http://abs.local",
         **kwargs,
     )
-    client.logger = logging.getLogger(__name__)
-    return client
 
 
 def _get(client: UserClient) -> Awaitable[object]:

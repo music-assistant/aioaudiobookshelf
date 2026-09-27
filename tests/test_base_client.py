@@ -1,6 +1,5 @@
 """Tests for how the base client maps abs' http errors."""
 
-import logging
 from collections.abc import Awaitable, Callable
 from unittest.mock import AsyncMock, Mock
 
@@ -15,24 +14,23 @@ from aioaudiobookshelf.exceptions import (
     NotFoundError,
 )
 
+from .helpers import make_client
+
 
 def _client(status: int) -> UserClient:
     error = ClientResponseError(request_info=Mock(), history=(), status=status)
-    client = UserClient.__new__(UserClient)
-    client.session_config = SessionConfiguration(
-        session=Mock(
+    return make_client(
+        UserClient,
+        Mock(
             post=AsyncMock(side_effect=error),
             patch=AsyncMock(side_effect=error),
             delete=AsyncMock(side_effect=error),
         ),
-        url="http://abs.local",
         access_token="access1",
         # without one a 401 is not an expired access token, see test_api_key_rejected
         refresh_token="refresh1",
         auto_refresh=False,
     )
-    client.logger = logging.getLogger(__name__)
-    return client
 
 
 def _post(client: UserClient) -> Awaitable[object]:
