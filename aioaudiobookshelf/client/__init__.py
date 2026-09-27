@@ -211,14 +211,10 @@ class SocketClient:
         self.on_author_removed = on_author_removed
 
     async def init_client(self, *, retry: bool = False, wait_timeout: float = 1) -> None:
-        """Initialize the client.
+        """Initialize the client. The defaults are socketio's own.
 
-        The defaults are socketio's own: one attempt, and one second to wait for
-        abs to accept the namespace. A server which is merely slow or briefly
-        unreachable therefore raises, which a caller may not want during setup.
-        Pass retry=True to let socketio keep trying instead — but note this
-        client sets reconnection_attempts=0, so that call only returns once abs
-        answers.
+        retry=True keeps trying, but reconnection_attempts is 0, so the call
+        then returns only once abs answers.
         """
         self.client.on("connect", handler=self._on_connect)
         self.client.on("connect_error", handler=self._on_connect_error)

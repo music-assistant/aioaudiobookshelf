@@ -1,9 +1,7 @@
 """What the clients ask abs for.
 
-These modules had no test at all, which is where the empty batch crash of
-tests/test_empty_bodies.py lived. The answers are not asserted here: a payload
-written by hand only proves what we assumed, see the fix notes. What is asserted
-is the request, which is ours.
+The answers are not asserted: a payload written by hand only proves what we
+assumed. The request is ours, so that is what these pin.
 """
 
 import logging
