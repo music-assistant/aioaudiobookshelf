@@ -32,16 +32,18 @@ class FakeSocketIoClient:
         self.emitted: list[tuple[str, Any]] = []
         self.url: str | None = None
         self.socketio_path: str | None = None
+        self.options: dict[str, Any] = {}
         self.disconnects = 0
 
     def on(self, event: str, handler: Handler) -> None:
         """Register an event handler."""
         self.handlers[event] = handler
 
-    async def connect(self, url: str, socketio_path: str) -> None:
+    async def connect(self, url: str, socketio_path: str, **options: Any) -> None:
         """Connect and raise the connect event, as socketio does."""
         self.url = url
         self.socketio_path = socketio_path
+        self.options = options
         await self.trigger("connect")
 
     async def disconnect(self) -> None:
@@ -317,3 +319,13 @@ async def test_an_accepted_api_key_is_left_alone() -> None:
 
     assert socket_io.auth_tokens == ["api_key"]
     assert socket_io.disconnects == 0
+
+
+async def test_a_caller_can_ask_socketio_to_keep_trying() -> None:
+    """A server which is briefly unreachable must not have to fail the setup."""
+    with patch("socketio.AsyncClient", FakeSocketIoClient):
+        socket_client = SocketClient(session_config=_session_config(access_token="access1"))
+    await socket_client.init_client(retry=True, wait_timeout=30)
+
+    assert isinstance(socket_client.client, FakeSocketIoClient)
+    assert socket_client.client.options == {"retry": True, "wait_timeout": 30}

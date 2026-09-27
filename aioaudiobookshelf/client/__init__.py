@@ -210,8 +210,12 @@ class SocketClient:
         self.on_author_updated = on_author_updated
         self.on_author_removed = on_author_removed
 
-    async def init_client(self) -> None:
-        """Initialize the client."""
+    async def init_client(self, *, retry: bool = False, wait_timeout: float = 1) -> None:
+        """Initialize the client. The defaults are socketio's own.
+
+        retry=True keeps trying, but reconnection_attempts is 0, so the call
+        then returns only once abs answers.
+        """
         self.client.on("connect", handler=self._on_connect)
         self.client.on("connect_error", handler=self._on_connect_error)
         self.client.on("auth_failed", handler=self._on_auth_failed)
@@ -253,7 +257,10 @@ class SocketClient:
         # passed separately. abs serves a socket for it, see its SocketAuthority.js
         base_path = urlparse(self.session_config.url).path
         await self.client.connect(
-            url=self.session_config.url, socketio_path=f"{base_path}/socket.io"
+            url=self.session_config.url,
+            socketio_path=f"{base_path}/socket.io",
+            retry=retry,
+            wait_timeout=wait_timeout,
         )
 
     def _on_event(self, event: str, handler: EventHandler) -> None:
