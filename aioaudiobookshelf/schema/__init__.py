@@ -33,7 +33,8 @@ class _BaseModel(DataClassJSONMixin):
         """Decode, reporting what abs sent as an error of ours.
 
         mashumaro generates from_dict on every subclass, so this is the one
-        inherited entry point there is; decoding a dict goes through decode().
+        inherited entry point there is; an already parsed payload goes through
+        from_payload().
         """
         try:
             return super().from_json(data, decoder, **from_dict_kwargs)
@@ -41,7 +42,7 @@ class _BaseModel(DataClassJSONMixin):
             raise SchemaError(f"Could not read a {cls.__name__} from abs.") from err
 
     @classmethod
-    def decode(cls: type[T], data: dict[str, Any]) -> T:
+    def from_payload(cls: type[T], data: dict[str, Any]) -> T:
         """Decode an already parsed payload, e.g. a socket event."""
         try:
             return cls.from_dict(data)

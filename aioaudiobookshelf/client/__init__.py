@@ -320,11 +320,11 @@ class SocketClient:
 
     async def _on_user_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_updated is not None:
-            await self.on_user_updated(User.decode(data))
+            await self.on_user_updated(User.from_payload(data))
 
     async def _on_user_item_progress_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_item_progress_updated is not None:
-            event = UserItemProgressUpdatedEvent.decode(data)
+            event = UserItemProgressUpdatedEvent.from_payload(data)
             await self.on_user_item_progress_updated(event.id_, event.data)
 
     async def _on_user_session_closed(self, session_id: str) -> None:
@@ -335,31 +335,31 @@ class SocketClient:
 
     async def _on_item_added(self, data: dict[str, Any]) -> None:
         if self.on_item_added is not None:
-            await self.on_item_added(LibraryItemExpanded.decode(data))
+            await self.on_item_added(LibraryItemExpanded.from_payload(data))
 
     async def _on_item_updated(self, data: dict[str, Any]) -> None:
         if self.on_item_updated is not None:
-            await self.on_item_updated(LibraryItemExpanded.decode(data))
+            await self.on_item_updated(LibraryItemExpanded.from_payload(data))
 
     async def _on_item_removed(self, data: dict[str, Any]) -> None:
         if self.on_item_removed is not None:
-            await self.on_item_removed(LibraryItemRemoved.decode(data))
+            await self.on_item_removed(LibraryItemRemoved.from_payload(data))
 
     async def _on_items_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_added is not None:
-            await self.on_items_added([LibraryItemExpanded.decode(x) for x in data])
+            await self.on_items_added([LibraryItemExpanded.from_payload(x) for x in data])
 
     async def _on_items_updated(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_updated is not None:
-            await self.on_items_updated([LibraryItemExpanded.decode(x) for x in data])
+            await self.on_items_updated([LibraryItemExpanded.from_payload(x) for x in data])
 
     async def _on_episode_download_finished(self, data: dict[str, Any]) -> None:
         if self.on_episode_download_finished is not None:
-            await self.on_episode_download_finished(PodcastEpisodeDownload.decode(data))
+            await self.on_episode_download_finished(PodcastEpisodeDownload.from_payload(data))
 
     async def _on_stream_open(self, data: dict[str, Any]) -> None:
         if self.on_stream_open is not None:
-            await self.on_stream_open(Stream.decode(data))
+            await self.on_stream_open(Stream.from_payload(data))
 
     async def _on_stream_closed(self, stream_id: str) -> None:
         if self.on_stream_closed is not None:
@@ -367,7 +367,7 @@ class SocketClient:
 
     async def _on_stream_progress(self, data: dict[str, Any]) -> None:
         if self.on_stream_progress is not None:
-            await self.on_stream_progress(StreamProgress.decode(data))
+            await self.on_stream_progress(StreamProgress.from_payload(data))
 
     async def _on_stream_ready(self) -> None:
         if self.on_stream_ready is not None:
@@ -375,36 +375,36 @@ class SocketClient:
 
     async def _on_stream_reset(self, data: dict[str, Any]) -> None:
         if self.on_stream_reset is not None:
-            await self.on_stream_reset(StreamReset.decode(data))
+            await self.on_stream_reset(StreamReset.from_payload(data))
 
     async def _on_stream_error(self, data: dict[str, Any]) -> None:
         if self.on_stream_error is not None:
-            await self.on_stream_error(StreamError.decode(data))
+            await self.on_stream_error(StreamError.from_payload(data))
 
     async def _on_playlist_added(self, data: dict[str, Any]) -> None:
         if self.on_playlist_added is not None:
-            await self.on_playlist_added(PlaylistExpanded.decode(data))
+            await self.on_playlist_added(PlaylistExpanded.from_payload(data))
 
     async def _on_playlist_updated(self, data: dict[str, Any]) -> None:
         if self.on_playlist_updated is not None:
-            await self.on_playlist_updated(PlaylistExpanded.decode(data))
+            await self.on_playlist_updated(PlaylistExpanded.from_payload(data))
 
     async def _on_playlist_removed(self, data: dict[str, Any]) -> None:
         if self.on_playlist_removed is not None:
-            await self.on_playlist_removed(PlaylistExpanded.decode(data))
+            await self.on_playlist_removed(PlaylistExpanded.from_payload(data))
 
     async def _on_author_added(self, data: dict[str, Any]) -> None:
         if self.on_author_added is not None:
-            await self.on_author_added(Author.decode(data))
+            await self.on_author_added(Author.from_payload(data))
 
     async def _on_author_updated(self, data: dict[str, Any]) -> None:
         if self.on_author_updated is not None:
-            await self.on_author_updated(AuthorExpanded.decode(data))
+            await self.on_author_updated(AuthorExpanded.from_payload(data))
 
     async def _on_author_removed(self, data: dict[str, Any]) -> None:
         if self.on_author_removed is not None:
-            await self.on_author_removed(AuthorRemoved.decode(data))
+            await self.on_author_removed(AuthorRemoved.from_payload(data))
 
     async def _on_authors_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_authors_added is not None:
-            await self.on_authors_added([Author.decode(x) for x in data])
+            await self.on_authors_added([Author.from_payload(x) for x in data])
