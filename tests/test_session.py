@@ -1,13 +1,11 @@
 """Tests for /api/session calls."""
 
-import logging
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
 from aioaudiobookshelf.client.session import SessionClient
-from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 from aioaudiobookshelf.exceptions import (
     ApiError,
     SessionNotFoundError,
@@ -16,20 +14,20 @@ from aioaudiobookshelf.exceptions import (
 )
 from aioaudiobookshelf.schema.calls_session import SyncOpenSessionParameters
 
+from .helpers import make_client
+
 
 def _client(*statuses: int) -> SessionClient:
     errors = [
         ClientResponseError(request_info=Mock(), history=(), status=status) for status in statuses
     ]
-    client = SessionClient.__new__(SessionClient)
-    client.session_config = SessionConfiguration(
-        session=Mock(post=AsyncMock(side_effect=errors)),
-        url="http://abs.local",
+    client = make_client(
+        SessionClient,
+        Mock(post=AsyncMock(side_effect=errors)),
         access_token="access1",
         refresh_token="refresh1",
     )
     client.session_config.refresh = AsyncMock()  # type: ignore[method-assign]
-    client.logger = logging.getLogger(__name__)
     return client
 
 

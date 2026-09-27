@@ -1,6 +1,5 @@
 """Tests for how the base client consumes abs' answers."""
 
-import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 from unittest.mock import AsyncMock, Mock
@@ -13,6 +12,8 @@ from aioaudiobookshelf.client import UserClient
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 from aioaudiobookshelf.exceptions import AbsError, SchemaError, ServiceUnavailableError
 from aioaudiobookshelf.schema.calls_session import SyncOpenSessionParameters
+
+from .helpers import make_client
 
 
 class FakeResponse:
@@ -68,16 +69,14 @@ class FakeSession:
 
 
 def _client(session: FakeSession, *, auto_refresh: bool = False) -> UserClient:
-    client = UserClient.__new__(UserClient)
-    client.session_config = SessionConfiguration(
-        session=session,  # type: ignore[arg-type]
-        url="http://abs.local",
+    client = make_client(
+        UserClient,
+        session,
         access_token="access1",
         refresh_token="refresh1",
         auto_refresh=auto_refresh,
     )
     client.session_config.refresh = AsyncMock()  # type: ignore[method-assign]
-    client.logger = logging.getLogger(__name__)
     return client
 
 
