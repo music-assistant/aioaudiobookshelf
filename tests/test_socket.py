@@ -208,20 +208,16 @@ async def test_unexpected_error_is_logged(caplog: pytest.LogCaptureFixture) -> N
     assert GUARD_LOG in caplog.text
 
 
-async def test_connect_error_survives_a_failing_refresh(caplog: pytest.LogCaptureFixture) -> None:
-    """The connect error handler swallows nothing either, so socketio keeps reconnecting."""
+async def test_connect_error_does_not_spend_a_refresh() -> None:
+    """A socket which cannot reach abs has not had its token rejected."""
+    refresh = AsyncMock()
     socket_io = await _socket(
-        _session_config(
-            AsyncMock(side_effect=ValueError("broken response")),
-            access_token="access1",
-            refresh_token="refresh1",
-        )
+        _session_config(refresh, access_token="access1", refresh_token="refresh1")
     )
 
-    with caplog.at_level(logging.ERROR):
-        await socket_io.trigger("connect_error", {"message": "unauthorized"})
+    await socket_io.trigger("connect_error", {"message": "unauthorized"})
 
-    assert "Could not handle a socket connection error." in caplog.text
+    refresh.assert_not_awaited()
 
 
 async def test_api_key_auth_failed_disconnects() -> None:
