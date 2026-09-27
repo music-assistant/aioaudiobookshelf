@@ -71,3 +71,33 @@ async def test_finished_item_sends_no_progress() -> None:
     )
 
     assert session.payloads == [{"isFinished": True}]
+
+
+class FakeGetSession:
+    """Answers a GET and records what was asked for."""
+
+    def __init__(self) -> None:
+        """Init."""
+        self.url: str | None = None
+        self.params: dict[str, Any] | None = None
+
+    async def get(self, url: str, params: dict[str, Any], **_: Any) -> Mock:
+        """Answer with an empty list of items."""
+        self.url = url
+        self.params = params
+        return Mock(
+            status=200,
+            content_type="application/json",
+            read=AsyncMock(return_value=b'{"libraryItems": []}'),
+        )
+
+
+async def test_items_in_progress_asks_abs_for_its_own_limit() -> None:
+    """Abs falls back to 25 when the limit is not a number, so it has to be sent as one."""
+    session = FakeGetSession()
+
+    assert await _client(session).get_my_items_in_progress(limit=5) == []  # type: ignore[arg-type]
+
+    assert session.url is not None
+    assert session.url.endswith("/api/me/items-in-progress")
+    assert session.params == {"limit": 5}
