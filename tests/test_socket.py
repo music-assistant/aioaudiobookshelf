@@ -293,3 +293,15 @@ async def test_an_unreadable_event_is_logged(caplog: pytest.LogCaptureFixture) -
         await socket_io.trigger("user_updated", {})
 
     assert "Could not handle the socket event user_updated." in caplog.text
+
+
+async def test_the_library_and_episode_events_are_subscribed() -> None:
+    """Abs sends these, see its LibraryController.js and PodcastManager.js."""
+    socket_io = await _socket(_session_config(access_token="access1"))
+
+    assert {
+        "episode_added",
+        "library_added",
+        "library_updated",
+        "library_removed",
+    } <= socket_io.handlers.keys()
