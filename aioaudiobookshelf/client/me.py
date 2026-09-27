@@ -6,10 +6,12 @@ from typing import Any
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.exceptions import NotFoundError
 from aioaudiobookshelf.schema.calls_me import (
+    ItemsInProgressResponse,
     MeListeningSessionsParameters,
     MeListeningSessionsResponse,
 )
 from aioaudiobookshelf.schema.media_progress import MediaProgress
+from aioaudiobookshelf.schema.shelf import ShelfLibraryItemMinified
 from aioaudiobookshelf.schema.user import User
 
 
@@ -33,6 +35,14 @@ class MeClient(BaseClient):
             response = await self._get("/api/me/listening-sessions", params.to_dict())
             page_cnt += 1
             yield MeListeningSessionsResponse.from_json(response)
+
+    async def get_my_items_in_progress(self, *, limit: int = 25) -> list[ShelfLibraryItemMinified]:
+        """Get this user's unfinished items, the most recently listened to first.
+
+        Abs counts an item as in progress once it has a position, see its MeController.js.
+        """
+        response = await self._get("/api/me/items-in-progress", params={"limit": limit})
+        return ItemsInProgressResponse.from_json(response).library_items
 
     # listening stats
     # remove item from continue listening
