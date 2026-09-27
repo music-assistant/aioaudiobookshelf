@@ -283,3 +283,13 @@ async def test_a_connect_without_a_token_is_logged(caplog: pytest.LogCaptureFixt
         await _socket(_session_config())
 
     assert "Could not authenticate the socket connection." in caplog.text
+
+
+async def test_an_unreadable_event_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """A schema gap in a live event must not stop the updates silently."""
+    socket_io = await _socket(_session_config(access_token="access1"), on_user_updated=AsyncMock())
+
+    with caplog.at_level(logging.ERROR):
+        await socket_io.trigger("user_updated", {})
+
+    assert "Could not handle the socket event user_updated." in caplog.text

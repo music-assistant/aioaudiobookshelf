@@ -3,15 +3,15 @@
 from dataclasses import dataclass
 from typing import Annotated
 
-from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.types import Alias
 
+from . import _BaseModel
 from .server import ServerSettings
 from .user import User
 
 
 @dataclass(kw_only=True)
-class LoginParameters(DataClassJSONMixin):
+class LoginParameters(_BaseModel):
     """Login params."""
 
     username: str
@@ -19,7 +19,7 @@ class LoginParameters(DataClassJSONMixin):
 
 
 @dataclass(kw_only=True)
-class LoginResponse(DataClassJSONMixin):
+class LoginResponse(_BaseModel):
     """Response to login request."""
 
     user: User

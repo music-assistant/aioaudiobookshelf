@@ -6,6 +6,8 @@ from typing import TypeVar
 from mashumaro.codecs.json import json_decode
 
 from aioaudiobookshelf.client._base import BaseClient
+from aioaudiobookshelf.exceptions import SchemaError
+from aioaudiobookshelf.schema import DECODE_ERRORS
 from aioaudiobookshelf.schema.author import AuthorExpanded, Narrator
 from aioaudiobookshelf.schema.calls_library import (
     AllLibrariesResponse,
@@ -171,7 +173,11 @@ class LibrariesClient(BaseClient):
         response = await self._get(
             endpoint=f"/api/libraries/{library_id}/personalized", params={"limit": limit}
         )
-        return json_decode(response, list[Shelf])
+        try:
+            # a union of shelf types, so it does not go through a single model
+            return json_decode(response, list[Shelf])
+        except DECODE_ERRORS as err:
+            raise SchemaError("Could not read the personalized view from abs.") from err
 
     async def get_library_filterdata(self, *, library_id: str) -> LibraryFilterData:
         """Get filterdata of library."""

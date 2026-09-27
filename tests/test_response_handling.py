@@ -11,7 +11,7 @@ from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 import aioaudiobookshelf
 from aioaudiobookshelf.client import UserClient
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import AbsError, ServiceUnavailableError
+from aioaudiobookshelf.exceptions import AbsError, SchemaError, ServiceUnavailableError
 from aioaudiobookshelf.schema.calls_session import SyncOpenSessionParameters
 
 
@@ -186,3 +186,13 @@ async def test_an_unreachable_abs_does_not_look_like_a_wrong_password(
 
     with pytest.raises(ServiceUnavailableError):
         await login(session_config)
+
+
+async def test_an_answer_that_does_not_fit_the_schema_is_an_abs_error() -> None:
+    """A schema gap must reach the caller as one of our errors, not a json one."""
+    session = FakeSession(FakeResponse(body=b'{"libraries": [{"nope": 1}]}'))
+
+    with pytest.raises(AbsError) as excinfo:
+        await _client(session).get_all_libraries()
+
+    assert isinstance(excinfo.value, SchemaError)

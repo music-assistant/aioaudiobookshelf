@@ -40,6 +40,8 @@ from .podcasts import PodcastsClient
 from .series import SeriesClient
 from .session import SessionClient
 
+EventHandler = Callable[..., Coroutine[Any, Any, None]]
+
 
 class UserClient(
     LibrariesClient,
@@ -194,33 +196,33 @@ class SocketClient:
         self.client.on("auth_failed", handler=self._on_auth_failed)
         self.client.on("init", handler=self._on_init)
 
-        self.client.on("user_updated", handler=self._on_user_updated)
-        self.client.on("user_item_progress_updated", handler=self._on_user_item_progress_updated)
-        self.client.on("user_session_closed", handler=self._on_user_session_closed)
+        self._on_event("user_updated", self._on_user_updated)
+        self._on_event("user_item_progress_updated", self._on_user_item_progress_updated)
+        self._on_event("user_session_closed", self._on_user_session_closed)
 
-        self.client.on("item_added", handler=self._on_item_added)
-        self.client.on("item_updated", handler=self._on_item_updated)
-        self.client.on("item_removed", handler=self._on_item_removed)
-        self.client.on("items_added", handler=self._on_items_added)
-        self.client.on("items_updated", handler=self._on_items_updated)
+        self._on_event("item_added", self._on_item_added)
+        self._on_event("item_updated", self._on_item_updated)
+        self._on_event("item_removed", self._on_item_removed)
+        self._on_event("items_added", self._on_items_added)
+        self._on_event("items_updated", self._on_items_updated)
 
-        self.client.on("episode_download_finished", handler=self._on_episode_download_finished)
+        self._on_event("episode_download_finished", self._on_episode_download_finished)
 
-        self.client.on("stream_open", handler=self._on_stream_open)
-        self.client.on("stream_closed", handler=self._on_stream_closed)
-        self.client.on("stream_progress", handler=self._on_stream_progress)
-        self.client.on("stream_ready", handler=self._on_stream_ready)
-        self.client.on("stream_reset", handler=self._on_stream_reset)
-        self.client.on("stream_error", handler=self._on_stream_error)
+        self._on_event("stream_open", self._on_stream_open)
+        self._on_event("stream_closed", self._on_stream_closed)
+        self._on_event("stream_progress", self._on_stream_progress)
+        self._on_event("stream_ready", self._on_stream_ready)
+        self._on_event("stream_reset", self._on_stream_reset)
+        self._on_event("stream_error", self._on_stream_error)
 
-        self.client.on("playlist_added", handler=self._on_playlist_added)
-        self.client.on("playlist_updated", handler=self._on_playlist_updated)
-        self.client.on("playlist_removed", handler=self._on_playlist_removed)
+        self._on_event("playlist_added", self._on_playlist_added)
+        self._on_event("playlist_updated", self._on_playlist_updated)
+        self._on_event("playlist_removed", self._on_playlist_removed)
 
-        self.client.on("author_added", handler=self._on_author_added)
-        self.client.on("author_updated", handler=self._on_author_updated)
-        self.client.on("author_removed", handler=self._on_author_removed)
-        self.client.on("authors_added", handler=self._on_authors_added)
+        self._on_event("author_added", self._on_author_added)
+        self._on_event("author_updated", self._on_author_updated)
+        self._on_event("author_removed", self._on_author_removed)
+        self._on_event("authors_added", self._on_authors_added)
 
         # engineio builds its url from the host alone, so a base path has to be
         # passed separately. abs serves a socket for it, see its SocketAuthority.js
@@ -228,6 +230,18 @@ class SocketClient:
         await self.client.connect(
             url=self.session_config.url, socketio_path=f"{base_path}/socket.io"
         )
+
+    def _on_event(self, event: str, handler: EventHandler) -> None:
+        """Register a data handler, with the guard socketio does not give it."""
+
+        async def guarded(*args: Any) -> None:
+            try:
+                await handler(*args)
+            except AbsError:
+                # socketio runs handlers in their own task and drops what they raise
+                self.logger.exception("Could not handle the socket event %s.", event)
+
+        self.client.on(event, handler=guarded)
 
     async def shutdown(self) -> None:
         """Shutdown client (disconnect, or stop reconnect attempt)."""
@@ -306,11 +320,11 @@ class SocketClient:
 
     async def _on_user_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_updated is not None:
-            await self.on_user_updated(User.from_dict(data))
+            await self.on_user_updated(User.from_payload(data))
 
     async def _on_user_item_progress_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_item_progress_updated is not None:
-            event = UserItemProgressUpdatedEvent.from_dict(data)
+            event = UserItemProgressUpdatedEvent.from_payload(data)
             await self.on_user_item_progress_updated(event.id_, event.data)
 
     async def _on_user_session_closed(self, session_id: str) -> None:
@@ -321,31 +335,31 @@ class SocketClient:
 
     async def _on_item_added(self, data: dict[str, Any]) -> None:
         if self.on_item_added is not None:
-            await self.on_item_added(LibraryItemExpanded.from_dict(data))
+            await self.on_item_added(LibraryItemExpanded.from_payload(data))
 
     async def _on_item_updated(self, data: dict[str, Any]) -> None:
         if self.on_item_updated is not None:
-            await self.on_item_updated(LibraryItemExpanded.from_dict(data))
+            await self.on_item_updated(LibraryItemExpanded.from_payload(data))
 
     async def _on_item_removed(self, data: dict[str, Any]) -> None:
         if self.on_item_removed is not None:
-            await self.on_item_removed(LibraryItemRemoved.from_dict(data))
+            await self.on_item_removed(LibraryItemRemoved.from_payload(data))
 
     async def _on_items_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_added is not None:
-            await self.on_items_added([LibraryItemExpanded.from_dict(x) for x in data])
+            await self.on_items_added([LibraryItemExpanded.from_payload(x) for x in data])
 
     async def _on_items_updated(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_updated is not None:
-            await self.on_items_updated([LibraryItemExpanded.from_dict(x) for x in data])
+            await self.on_items_updated([LibraryItemExpanded.from_payload(x) for x in data])
 
     async def _on_episode_download_finished(self, data: dict[str, Any]) -> None:
         if self.on_episode_download_finished is not None:
-            await self.on_episode_download_finished(PodcastEpisodeDownload.from_dict(data))
+            await self.on_episode_download_finished(PodcastEpisodeDownload.from_payload(data))
 
     async def _on_stream_open(self, data: dict[str, Any]) -> None:
         if self.on_stream_open is not None:
-            await self.on_stream_open(Stream.from_dict(data))
+            await self.on_stream_open(Stream.from_payload(data))
 
     async def _on_stream_closed(self, stream_id: str) -> None:
         if self.on_stream_closed is not None:
@@ -353,7 +367,7 @@ class SocketClient:
 
     async def _on_stream_progress(self, data: dict[str, Any]) -> None:
         if self.on_stream_progress is not None:
-            await self.on_stream_progress(StreamProgress.from_dict(data))
+            await self.on_stream_progress(StreamProgress.from_payload(data))
 
     async def _on_stream_ready(self) -> None:
         if self.on_stream_ready is not None:
@@ -361,36 +375,36 @@ class SocketClient:
 
     async def _on_stream_reset(self, data: dict[str, Any]) -> None:
         if self.on_stream_reset is not None:
-            await self.on_stream_reset(StreamReset.from_dict(data))
+            await self.on_stream_reset(StreamReset.from_payload(data))
 
     async def _on_stream_error(self, data: dict[str, Any]) -> None:
         if self.on_stream_error is not None:
-            await self.on_stream_error(StreamError.from_dict(data))
+            await self.on_stream_error(StreamError.from_payload(data))
 
     async def _on_playlist_added(self, data: dict[str, Any]) -> None:
         if self.on_playlist_added is not None:
-            await self.on_playlist_added(PlaylistExpanded.from_dict(data))
+            await self.on_playlist_added(PlaylistExpanded.from_payload(data))
 
     async def _on_playlist_updated(self, data: dict[str, Any]) -> None:
         if self.on_playlist_updated is not None:
-            await self.on_playlist_updated(PlaylistExpanded.from_dict(data))
+            await self.on_playlist_updated(PlaylistExpanded.from_payload(data))
 
     async def _on_playlist_removed(self, data: dict[str, Any]) -> None:
         if self.on_playlist_removed is not None:
-            await self.on_playlist_removed(PlaylistExpanded.from_dict(data))
+            await self.on_playlist_removed(PlaylistExpanded.from_payload(data))
 
     async def _on_author_added(self, data: dict[str, Any]) -> None:
         if self.on_author_added is not None:
-            await self.on_author_added(Author.from_dict(data))
+            await self.on_author_added(Author.from_payload(data))
 
     async def _on_author_updated(self, data: dict[str, Any]) -> None:
         if self.on_author_updated is not None:
-            await self.on_author_updated(AuthorExpanded.from_dict(data))
+            await self.on_author_updated(AuthorExpanded.from_payload(data))
 
     async def _on_author_removed(self, data: dict[str, Any]) -> None:
         if self.on_author_removed is not None:
-            await self.on_author_removed(AuthorRemoved.from_dict(data))
+            await self.on_author_removed(AuthorRemoved.from_payload(data))
 
     async def _on_authors_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_authors_added is not None:
-            await self.on_authors_added([Author.from_dict(x) for x in data])
+            await self.on_authors_added([Author.from_payload(x) for x in data])
