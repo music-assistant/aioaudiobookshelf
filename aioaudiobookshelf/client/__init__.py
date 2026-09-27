@@ -298,26 +298,35 @@ class SocketClient:
         # abs sends init once the socket is authenticated
         self._auth_retried = False
 
-    async def _on_auth_failed(self, *_: Any) -> None:
+    async def _on_auth_failed(self, *args: Any) -> None:
+        # abs says why it rejected us, which is the only clue a caller gets
+        reason = args[0].get("message") if args and isinstance(args[0], dict) else None
         # socketio runs handlers in their own task, so errors would go unnoticed
         try:
-            await self._handle_auth_failed()
+            await self._handle_auth_failed(reason)
         except (AbsError, socketio.exceptions.SocketIOError):
             self.logger.exception("Could not handle a rejected socket authentication.")
 
-    async def _handle_auth_failed(self) -> None:
+    async def _handle_auth_failed(self, reason: str | None = None) -> None:
         # abs rejects e.g. an expired access token here, the connection itself stays up
+        said = f" Abs said: {reason}." if reason else ""
         if self.session_config.access_token is None:
-            # a rejected api key or pre v2.26 token cannot be refreshed
+            # An api key or a pre v2.26 token cannot be refreshed, so this is final.
+            # Abs accepts api keys on the socket only after v2.36.1, and deactivates
+            # an expired one when it rejects it, see its SocketAuthority.js.
             self.logger.warning(
-                "Socket authentication failed, live updates are unavailable. "
-                "Audiobookshelf accepts only access tokens for socket connections."
+                "Socket authentication failed, live updates are unavailable. The configured "
+                "token cannot be refreshed: check that the api key is active and not expired, "
+                "and that audiobookshelf is new enough to accept one here.%s",
+                said,
             )
             await self.client.disconnect()
             return
         # not awaiting between test and set keeps concurrent events to one retry
         if self._auth_retried or not self.session_config.auto_refresh:
-            self.logger.warning("Socket authentication failed, live updates are unavailable.")
+            self.logger.warning(
+                "Socket authentication failed, live updates are unavailable.%s", said
+            )
             return
         self._auth_retried = True
         self.logger.debug("Socket authentication failed, refreshing token.")

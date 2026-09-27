@@ -235,13 +235,15 @@ async def test_connect_error_does_not_spend_a_refresh() -> None:
     refresh.assert_not_awaited()
 
 
-async def test_api_key_auth_failed_disconnects() -> None:
-    """A rejected api key disconnects the socket, as abs does not support it."""
+async def test_api_key_auth_failed_disconnects(caplog: pytest.LogCaptureFixture) -> None:
+    """An api key abs rejected cannot be refreshed, so the socket goes down and says why."""
     socket_io = await _socket(_session_config(token="api_key"))
 
-    await socket_io.auth_failed()
+    with caplog.at_level(logging.WARNING):
+        await socket_io.trigger("auth_failed", {"message": "API key expired"})
 
     assert socket_io.disconnects == 1
+    assert "Abs said: API key expired." in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -305,3 +307,13 @@ async def test_the_library_and_episode_events_are_subscribed() -> None:
         "library_updated",
         "library_removed",
     } <= socket_io.handlers.keys()
+
+
+async def test_an_accepted_api_key_is_left_alone() -> None:
+    """Abs accepts api keys on the socket after v2.36.1, so nothing is rejected."""
+    socket_io = await _socket(_session_config(token="api_key"))
+
+    await socket_io.trigger("init", {})
+
+    assert socket_io.auth_tokens == ["api_key"]
+    assert socket_io.disconnects == 0
