@@ -1,6 +1,7 @@
 """Calls to /api/me."""
 
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.exceptions import NotFoundError
@@ -59,17 +60,18 @@ class MeClient(BaseClient):
         duration_seconds: float,
         progress_seconds: float,
         is_finished: bool,
+        mark_as_finished_time_remaining: int | None = None,
+        mark_as_finished_percent_complete: int | None = None,
     ) -> None:
         """Update progress of media item.
 
-        0 <= progress_percent <= 1
+        The mark_as_finished_* are a library's settings. Abs only applies them to
+        /api/me/progress if the caller sends them, unlike a session sync, where it
+        adds them itself. Without them abs falls back to 10s remaining.
 
-        Notes:
-            - progress in abs is percentage
-            - multiple parameters in one call don't work in all combinations
-            - currentTime is current position in s
-            - currentTime works only if duration is sent as well, but then don't
-              send progress at the same time.
+        Three calls, because abs cannot take this in one (models/MediaProgress.js):
+            - with isFinished in the payload, progress in the same payload is ignored
+            - unsetting isFinished drops currentTime from the payload and zeroes it
         """
         logger_item = "audiobook" if not episode_id else "podcast"
         endpoint = f"/api/me/progress/{item_id}"
@@ -95,10 +97,12 @@ class MeClient(BaseClient):
             endpoint,
             data={"progress": percentage},
         )
-        await self._patch(
-            endpoint,
-            data={"duration": duration_seconds, "currentTime": progress_seconds},
-        )
+        data: dict[str, Any] = {"duration": duration_seconds, "currentTime": progress_seconds}
+        if mark_as_finished_time_remaining is not None:
+            data["markAsFinishedTimeRemaining"] = mark_as_finished_time_remaining
+        if mark_as_finished_percent_complete is not None:
+            data["markAsFinishedPercentComplete"] = mark_as_finished_percent_complete
+        await self._patch(endpoint, data=data)
         self.logger.debug(
             "Updated progress of %s, id %s to %.2f%%.", logger_item, item_id, percentage * 100
         )
