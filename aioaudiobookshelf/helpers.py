@@ -5,9 +5,13 @@ import urllib.parse
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from aiohttp.client_exceptions import ClientResponseError, InvalidUrlClientError
+from aiohttp.client_exceptions import (
+    ClientConnectionError,
+    ClientResponseError,
+    InvalidUrlClientError,
+)
 
-from aioaudiobookshelf.exceptions import LoginError
+from aioaudiobookshelf.exceptions import LoginError, ServiceUnavailableError
 from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
 
 if TYPE_CHECKING:
@@ -80,6 +84,8 @@ async def get_login_response(
             # adapt > v2.26.0 https://github.com/advplyr/audiobookshelf/discussions/4460
             headers={"x-return-tokens": "true"},
         )
+    except (ClientConnectionError, TimeoutError) as exc:
+        raise ServiceUnavailableError from exc
     except (ClientResponseError, InvalidUrlClientError) as exc:
         raise LoginError from exc
     return LoginResponse.from_json(await resp.read())
