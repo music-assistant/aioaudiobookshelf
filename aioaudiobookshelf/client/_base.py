@@ -56,12 +56,8 @@ class BaseClient:
                 assert login_response.user.token is not None
                 self.session_config.token = login_response.user.token
 
-        if self.session_config.logger is None:
-            self.logger = logging.getLogger(__name__)
-            logging.basicConfig()
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger = self.session_config.logger
+        # configuring logging is the caller's business, not a library's
+        self.logger = self.session_config.logger or logging.getLogger(__name__)
 
         self.logger.debug(
             "Initialized client %s",
