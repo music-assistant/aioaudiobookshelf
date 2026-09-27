@@ -23,7 +23,7 @@ async def _get_authorize_response(*, session_config: SessionConfiguration) -> Au
     """Login via token."""
     try:
         resp = await session_config.session.post(
-            f"{session_config.url}/api/authorize",
+            session_config.url_for("api/authorize"),
             ssl=session_config.verify_ssl,
             raise_for_status=True,
             headers=session_config.headers,

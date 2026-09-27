@@ -9,12 +9,14 @@ from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 
 from aioaudiobookshelf.exceptions import (
     AbsError,
+    ApiError,
+    LoginError,
     RefreshTokenExpiredError,
     ServiceUnavailableError,
     TokenIsMissingError,
 )
 from aioaudiobookshelf.helpers import get_login_response
-from aioaudiobookshelf.schema.calls_login import RefreshResponse
+from aioaudiobookshelf.schema.calls_login import LoginResponse, RefreshResponse
 
 
 @dataclass(kw_only=True)
@@ -35,6 +37,10 @@ class SessionConfiguration:
     pagination_items_per_page: int = 10
     timeout: ClientTimeout = DEFAULT_TIMEOUT
     logger: logging.Logger | None = None
+
+    def url_for(self, endpoint: str) -> str:
+        """Build a url. Abs routes /api/..., so a second slash is not ours to send."""
+        return f"{self.url}/{endpoint.lstrip('/')}"
 
     @property
     def headers(self) -> dict[str, str]:
@@ -108,7 +114,7 @@ class SessionConfiguration:
         try:
             endpoint = "auth/refresh"
             response = await self.session.post(
-                f"{self.url}/{endpoint}",
+                self.url_for(endpoint),
                 ssl=self.verify_ssl,
                 headers=self.headers_refresh_logout,
                 cookies=self.cookies_refresh_logout,
@@ -125,10 +131,30 @@ class SessionConfiguration:
         data = await response.read()
         # a SchemaError from here means abs answered without the tokens we asked for
         refresh_response = RefreshResponse.from_json(data)
-        assert refresh_response.user.access_token is not None
-        assert refresh_response.user.refresh_token is not None
-        self.access_token = refresh_response.user.access_token
-        self.refresh_token = refresh_response.user.refresh_token
+        access_token = refresh_response.user.access_token
+        refresh_token = refresh_response.user.refresh_token
+        if access_token is None or refresh_token is None:
+            raise ApiError("Abs refreshed without returning both tokens.")
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+
+    def adopt_tokens(self, login_response: LoginResponse) -> None:
+        """Take the tokens abs handed out, and drop the ones they replace."""
+        user = login_response.user
+        if user.access_token is not None:
+            if user.refresh_token is None:
+                raise LoginError("Abs logged us in without a refresh token.")
+            self.access_token = user.access_token
+            self.refresh_token = user.refresh_token
+            # a server which now issues access tokens does not accept the old one
+            self.token = None
+        elif user.token is not None:
+            # pre v2.26
+            self.token = user.token
+            self.access_token = None
+            self.refresh_token = None
+        else:
+            raise LoginError("Abs logged us in without a token.")
 
     async def authenticate(self, *, username: str, password: str) -> None:
         """Relogin and update tokens if refresh token expired."""
@@ -136,18 +162,7 @@ class SessionConfiguration:
             login_response = await get_login_response(
                 session_config=self, username=username, password=password
             )
-            if login_response.user.access_token is None:
-                # pre v2.26
-                assert login_response.user.token is not None
-                self.token = login_response.user.token
-                self.access_token = None
-                self.refresh_token = None
-            else:
-                assert login_response.user.refresh_token is not None
-                self.access_token = login_response.user.access_token
-                self.refresh_token = login_response.user.refresh_token
-                # a server which now issues access tokens does not accept the old one
-                self.token = None
+            self.adopt_tokens(login_response)
             # a refresh waiting for this lock shares the new tokens
             self.__refresh_error = None
             self.__refresh_generation += 1

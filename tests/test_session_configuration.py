@@ -9,7 +9,7 @@ import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import ApiError, RefreshTokenExpiredError
+from aioaudiobookshelf.exceptions import ApiError, LoginError, RefreshTokenExpiredError
 
 
 class FakeSession:
@@ -164,3 +164,28 @@ async def test_an_unreadable_refresh_answer_is_an_abs_error() -> None:
 
     with pytest.raises(ApiError):
         await _session_config(session).refresh()
+
+
+async def test_a_login_without_tokens_is_an_error() -> None:
+    """Abs promising a token is not a reason to assert, which -O removes."""
+    session_config = _session_config(FakeSession())
+
+    with pytest.raises(LoginError):
+        session_config.adopt_tokens(Mock(user=Mock(access_token=None, token=None)))
+
+
+async def test_a_refresh_without_both_tokens_is_an_error() -> None:
+    """A refresh answer we cannot use has to say so, not leave a None behind."""
+    session = FakeSession()
+    session.release.set()
+    session_config = _session_config(session)
+    response = Mock(user=Mock(access_token="access2", refresh_token=None))
+
+    with (
+        patch(
+            "aioaudiobookshelf.client.session_configuration.RefreshResponse.from_json",
+            return_value=response,
+        ),
+        pytest.raises(ApiError),
+    ):
+        await session_config.refresh()

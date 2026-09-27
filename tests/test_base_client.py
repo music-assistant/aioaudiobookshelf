@@ -61,3 +61,13 @@ async def test_response_status_is_mapped(
     """Abs' status decides the error, read from a property aiohttp does not deprecate."""
     with pytest.raises(expected):
         await call(_client(status))
+
+
+async def test_the_url_carries_no_double_slash() -> None:
+    """Abs routes /api/..., and //api works only because abs rewrites it."""
+    session_config = SessionConfiguration(
+        session=Mock(), url="http://abs.local/", access_token="access1"
+    )
+
+    assert session_config.url_for("/api/me") == "http://abs.local/api/me"
+    assert session_config.url_for("login") == "http://abs.local/login"

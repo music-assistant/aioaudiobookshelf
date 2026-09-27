@@ -47,14 +47,7 @@ class BaseClient:
         self.server_settings = login_response.server_settings
 
         if not self.session_config.token and not self.session_config.refresh_token:
-            if login_response.user.refresh_token is not None:
-                assert login_response.user.access_token is not None
-                assert login_response.user.refresh_token is not None
-                self.session_config.refresh_token = login_response.user.refresh_token
-                self.session_config.access_token = login_response.user.access_token
-            elif login_response.user.token is not None:
-                assert login_response.user.token is not None
-                self.session_config.token = login_response.user.token
+            self.session_config.adopt_tokens(login_response)
 
         # configuring logging is the caller's business, not a library's
         self.logger = self.session_config.logger or logging.getLogger(__name__)
@@ -100,7 +93,7 @@ class BaseClient:
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.post(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 json=data,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
@@ -140,7 +133,7 @@ class BaseClient:
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.get(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 params=params,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
@@ -176,7 +169,7 @@ class BaseClient:
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.patch(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 json=data,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
@@ -209,7 +202,7 @@ class BaseClient:
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.delete(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
                 raise_for_status=True,
@@ -246,7 +239,7 @@ class BaseClient:
             if self.session_config.refresh_token is not None:
                 # v2.26 and above
                 await self.session_config.session.post(
-                    f"{self.session_config.url}/logout",
+                    self.session_config.url_for("logout"),
                     ssl=self.session_config.verify_ssl,
                     headers=self.session_config.headers_refresh_logout,
                     cookies=self.session_config.cookies_refresh_logout,
