@@ -141,9 +141,7 @@ class SessionConfiguration:
     def adopt_tokens(self, login_response: LoginResponse) -> None:
         """Take the tokens abs handed out, and drop the ones they replace."""
         user = login_response.user
-        if user.access_token is not None:
-            if user.refresh_token is None:
-                raise LoginError("Abs logged us in without a refresh token.")
+        if user.access_token is not None and user.refresh_token is not None:
             self.access_token = user.access_token
             self.refresh_token = user.refresh_token
             # a server which now issues access tokens does not accept the old one
@@ -153,8 +151,10 @@ class SessionConfiguration:
             self.token = user.token
             self.access_token = None
             self.refresh_token = None
-        else:
-            raise LoginError("Abs logged us in without a token.")
+        elif self.access_token is None and self.token is None:
+            # /api/authorize answers without tokens, so only a caller which has
+            # none of its own is stuck here
+            raise LoginError("Abs did not return a token we can use.")
 
     async def authenticate(self, *, username: str, password: str) -> None:
         """Relogin and update tokens if refresh token expired."""

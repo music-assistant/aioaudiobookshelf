@@ -168,10 +168,19 @@ async def test_an_unreadable_refresh_answer_is_an_abs_error() -> None:
 
 async def test_a_login_without_tokens_is_an_error() -> None:
     """Abs promising a token is not a reason to assert, which -O removes."""
-    session_config = _session_config(FakeSession())
+    session_config = SessionConfiguration(session=Mock(), url="http://abs.local")
 
     with pytest.raises(LoginError):
         session_config.adopt_tokens(Mock(user=Mock(access_token=None, token=None)))
+
+
+async def test_an_answer_without_tokens_leaves_the_configured_one_alone() -> None:
+    """/api/authorize answers without tokens, and that must not unset ours."""
+    session_config = _session_config(FakeSession())
+
+    session_config.adopt_tokens(Mock(user=Mock(access_token=None, token=None)))
+
+    assert session_config.access_token == "access1"
 
 
 async def test_a_refresh_without_both_tokens_is_an_error() -> None:
