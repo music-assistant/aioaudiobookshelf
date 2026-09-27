@@ -171,3 +171,7 @@ cython_debug/
 .pypirc
 
 simple_test.py
+
+# captured from a real abs instance by scripts/capture_fixtures.py
+tests/fixtures/
+fixtures-raw/
