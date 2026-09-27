@@ -45,6 +45,14 @@ class ApiError(AbsApiError):
     """Exception raised if call to api failed."""
 
 
+class SchemaError(ApiError):
+    """Raised when abs' answer does not match the schema.
+
+    Either abs changed what it sends, or our schema was wrong about it. Inherits
+    from ApiError so that a caller which catches that keeps catching this.
+    """
+
+
 class ServiceUnavailableError(AbsApiError):
     """Raised if service is not available."""
 
