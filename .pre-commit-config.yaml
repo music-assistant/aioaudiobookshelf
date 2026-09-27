@@ -93,3 +93,11 @@ repos:
         types: [python]
         require_serial: true
         files: ^aioaudiobookshelf/.+\.py$
+      - id: pytest
+        name: 🧪 Run tests
+        language: system
+        types: [python]
+        entry: scripts/run-in-env.sh pytest -q
+        pass_filenames: false
+        require_serial: true
+        stages: [pre-commit, pre-push, manual]
