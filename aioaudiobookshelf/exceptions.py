@@ -51,3 +51,10 @@ class SessionNotFoundError(NotFoundError):
 
 class SessionSyncError(AbsError):
     """Error while syncing (a) session(s)."""
+
+
+class SessionSyncNotFoundError(SessionSyncError, SessionNotFoundError):
+    """Raised if the session to sync is gone, e.g. after an abs restart.
+
+    Inherits from both, so callers which only know SessionSyncError keep working.
+    """

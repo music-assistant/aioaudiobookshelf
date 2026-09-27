@@ -122,10 +122,12 @@ class SocketClient:
         *,
         on_user_updated: Callable[[User], Any] | None = None,
         on_user_item_progress_updated: Callable[[str, MediaProgress], Any] | None = None,
+        on_user_session_closed: Callable[[str], Any] | None = None,
     ) -> None:
-        """Set user callbacks."""
+        """Set user callbacks. on_user_session_closed receives the session's id."""
         self.on_user_updated = on_user_updated
         self.on_user_item_progress_updated = on_user_item_progress_updated
+        self.on_user_session_closed = on_user_session_closed
 
     def set_podcast_episode_download_callbacks(
         self, *, on_episode_download_finished: Callable[[PodcastEpisodeDownload], Any] | None = None
@@ -192,6 +194,7 @@ class SocketClient:
 
         self.client.on("user_updated", handler=self._on_user_updated)
         self.client.on("user_item_progress_updated", handler=self._on_user_item_progress_updated)
+        self.client.on("user_session_closed", handler=self._on_user_session_closed)
 
         self.client.on("item_added", handler=self._on_item_added)
         self.client.on("item_updated", handler=self._on_item_updated)
@@ -311,6 +314,12 @@ class SocketClient:
         if self.on_user_item_progress_updated is not None:
             event = UserItemProgressUpdatedEvent.from_dict(data)
             await self.on_user_item_progress_updated(event.id_, event.data)
+
+    async def _on_user_session_closed(self, session_id: str) -> None:
+        # abs closes a session on a restart, and 36h after its last update,
+        # see its managers/PlaybackSessionManager.js
+        if self.on_user_session_closed is not None:
+            await self.on_user_session_closed(session_id)
 
     async def _on_item_added(self, data: dict[str, Any]) -> None:
         if self.on_item_added is not None:
