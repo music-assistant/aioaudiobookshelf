@@ -130,3 +130,28 @@ async def test_concurrent_login_ends_a_queued_refresh() -> None:
 
     assert session_config.access_token == "access3"
     assert session.calls == 0
+
+
+async def test_the_access_token_is_the_one_sent() -> None:
+    """BaseClient.token already prefers it, so the requests have to use the same one."""
+    session_config = SessionConfiguration(
+        session=Mock(), url="http://abs.local", token="old", access_token="access1"
+    )
+
+    assert session_config.headers == {"Authorization": "Bearer access1"}
+
+
+async def test_a_relogin_drops_the_token_it_replaced() -> None:
+    """A server which starts issuing access tokens no longer accepts the old one."""
+    session_config = SessionConfiguration(
+        session=Mock(), url="http://abs.local", token="old", refresh_token="refresh1"
+    )
+    login_response = Mock(user=Mock(access_token="access3", refresh_token="refresh3"))
+
+    with patch(
+        "aioaudiobookshelf.client.session_configuration.get_login_response",
+        AsyncMock(return_value=login_response),
+    ):
+        await session_config.authenticate(username="user", password="password")
+
+    assert session_config.token is None

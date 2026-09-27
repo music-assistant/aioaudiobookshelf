@@ -42,10 +42,11 @@ class SessionConfiguration:
 
         These are normal request headers.
         """
-        if self.token is not None:
-            return {"Authorization": f"Bearer {self.token}"}
+        # the access token wins, as in BaseClient.token, so both name the same token
         if self.access_token is not None:
             return {"Authorization": f"Bearer {self.access_token}"}
+        if self.token is not None:
+            return {"Authorization": f"Bearer {self.token}"}
         raise TokenIsMissingError("Token not set.")
 
     @property
@@ -138,10 +139,14 @@ class SessionConfiguration:
                 # pre v2.26
                 assert login_response.user.token is not None
                 self.token = login_response.user.token
+                self.access_token = None
+                self.refresh_token = None
             else:
                 assert login_response.user.refresh_token is not None
                 self.access_token = login_response.user.access_token
                 self.refresh_token = login_response.user.refresh_token
+                # a server which now issues access tokens does not accept the old one
+                self.token = None
             # a refresh waiting for this lock shares the new tokens
             self.__refresh_error = None
             self.__refresh_generation += 1
