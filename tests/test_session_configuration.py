@@ -9,7 +9,7 @@ import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import RefreshTokenExpiredError
+from aioaudiobookshelf.exceptions import ApiError, RefreshTokenExpiredError
 
 
 class FakeSession:
@@ -155,3 +155,12 @@ async def test_a_relogin_drops_the_token_it_replaced() -> None:
         await session_config.authenticate(username="user", password="password")
 
     assert session_config.token is None
+
+
+async def test_an_unreadable_refresh_answer_is_an_abs_error() -> None:
+    """Whatever abs answered with, the caller has to see one of our errors."""
+    session = FakeSession()
+    session.release.set()
+
+    with pytest.raises(ApiError):
+        await _session_config(session).refresh()

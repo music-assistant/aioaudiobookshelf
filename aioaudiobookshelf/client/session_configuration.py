@@ -9,6 +9,7 @@ from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 
 from aioaudiobookshelf.exceptions import (
     AbsError,
+    ApiError,
     RefreshTokenExpiredError,
     ServiceUnavailableError,
     TokenIsMissingError,
@@ -123,7 +124,11 @@ class SessionConfiguration:
             # e.g. abs' rate limit, or a proxy while abs restarts
             raise ServiceUnavailableError from err
         data = await response.read()
-        refresh_response = RefreshResponse.from_json(data)
+        try:
+            refresh_response = RefreshResponse.from_json(data)
+        except (ValueError, LookupError) as err:
+            # not json, or not what abs promised: either way there are no tokens in it
+            raise ApiError("Could not read the refreshed tokens.") from err
         assert refresh_response.user.access_token is not None
         assert refresh_response.user.refresh_token is not None
         self.access_token = refresh_response.user.access_token

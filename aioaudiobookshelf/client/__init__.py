@@ -263,7 +263,7 @@ class SocketClient:
         # socketio runs handlers in their own task, so errors would go unnoticed
         try:
             await self._handle_auth_failed()
-        except Exception:
+        except (AbsError, socketio.exceptions.SocketIOError):
             self.logger.exception("Could not handle a rejected socket authentication.")
 
     async def _handle_auth_failed(self) -> None:
@@ -285,12 +285,19 @@ class SocketClient:
         try:
             await self.session_config.refresh()
         except RefreshTokenExpiredError:
-            if self.on_refresh_token_expired is None:
-                return
-            await self.on_refresh_token_expired()
+            await self._notify_refresh_token_expired()
         except AbsError:
             return
         await self._authenticate()
+
+    async def _notify_refresh_token_expired(self) -> None:
+        if self.on_refresh_token_expired is None:
+            return
+        try:
+            await self.on_refresh_token_expired()
+        except Exception:
+            # the callback belongs to the caller, so anything can come out of it
+            self.logger.exception("The refresh token expired callback failed.")
 
     async def _on_connect_error(self, *_: Any) -> None:
         # abs rejects a token with auth_failed, never here, so there is nothing to renew:
