@@ -25,7 +25,6 @@ class MeClient(BaseClient):
 
     async def get_my_listening_sessions(self) -> AsyncGenerator[MeListeningSessionsResponse]:
         """Get this user's listening sessions."""
-        raise NotImplementedError("PodcastMetadata not fully returned.")
         page_cnt = 0
         params = MeListeningSessionsParameters(
             items_per_page=self.session_config.pagination_items_per_page, page=page_cnt

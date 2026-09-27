@@ -25,7 +25,7 @@ LOGOUT_TIMEOUT = ClientTimeout(total=10)
 
 # abs rejects an api key or a pre v2.26 token the same way it rejects an expired
 # access token, but neither of them can be refreshed
-NOT_RENEWABLE = "Abs rejected the token and it cannot be refreshed. Is it still valid?"
+NOT_RENEWABLE_MESSAGE = "Abs rejected the token and it cannot be refreshed."
 
 
 async def _json_body(response: ClientResponse) -> bytes:
@@ -49,7 +49,6 @@ class BaseClient:
         if not self.session_config.token and not self.session_config.refresh_token:
             self.session_config.adopt_tokens(login_response)
 
-        # configuring logging is the caller's business, not a library's
         self.logger = self.session_config.logger or logging.getLogger(__name__)
 
         self.logger.debug(
@@ -108,7 +107,7 @@ class BaseClient:
         except ClientResponseError as exc:
             if exc.status == 401:
                 if self.session_config.refresh_token is None:
-                    raise TokenNotRenewableError(NOT_RENEWABLE) from exc
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
@@ -129,7 +128,7 @@ class BaseClient:
         *,
         json_response: bool = True,
     ) -> bytes:
-        """GET request to abs api. Images and the like are not json."""
+        """GET request to abs api."""
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.get(
@@ -145,7 +144,7 @@ class BaseClient:
             if response.status == 401:
                 if self.session_config.refresh_token is None:
                     response.release()
-                    raise TokenNotRenewableError(NOT_RENEWABLE)
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE)
                 if not self.session_config.auto_refresh:
                     response.release()
                     raise AccessTokenExpiredError
@@ -184,7 +183,7 @@ class BaseClient:
         except ClientResponseError as exc:
             if exc.status == 401:
                 if self.session_config.refresh_token is None:
-                    raise TokenNotRenewableError(NOT_RENEWABLE) from exc
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
@@ -216,7 +215,7 @@ class BaseClient:
         except ClientResponseError as exc:
             if exc.status == 401:
                 if self.session_config.refresh_token is None:
-                    raise TokenNotRenewableError(NOT_RENEWABLE) from exc
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()

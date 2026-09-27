@@ -46,11 +46,7 @@ class ApiError(AbsApiError):
 
 
 class SchemaError(ApiError):
-    """Raised when abs' answer does not match the schema.
-
-    Either abs changed what it sends, or our schema was wrong about it. Inherits
-    from ApiError so that a caller which catches that keeps catching this.
-    """
+    """Raised when abs' answer does not match the schema."""
 
 
 class ServiceUnavailableError(AbsApiError):
@@ -70,7 +66,4 @@ class SessionSyncError(AbsError):
 
 
 class SessionSyncNotFoundError(SessionSyncError, SessionNotFoundError):
-    """Raised if the session to sync is gone, e.g. after an abs restart.
-
-    Inherits from both, so callers which only know SessionSyncError keep working.
-    """
+    """Raised if the session to sync is gone, e.g. after an abs restart."""

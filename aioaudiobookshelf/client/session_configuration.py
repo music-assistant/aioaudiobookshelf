@@ -40,7 +40,7 @@ class SessionConfiguration:
 
     def url_for(self, endpoint: str) -> str:
         """Build a url. Abs routes /api/..., so a second slash is not ours to send."""
-        return f"{self.url}/{endpoint.lstrip('/')}"
+        return f"{self.url.rstrip('/')}/{endpoint.lstrip('/')}"
 
     @property
     def headers(self) -> dict[str, str]:

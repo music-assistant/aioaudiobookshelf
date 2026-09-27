@@ -174,7 +174,6 @@ class LibrariesClient(BaseClient):
             endpoint=f"/api/libraries/{library_id}/personalized", params={"limit": limit}
         )
         try:
-            # a union of shelf types, so it does not go through a single model
             return json_decode(response, list[Shelf])
         except DECODE_ERRORS as err:
             raise SchemaError("Could not read the personalized view from abs.") from err

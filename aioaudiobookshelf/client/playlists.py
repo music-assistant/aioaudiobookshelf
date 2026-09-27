@@ -1,6 +1,5 @@
 """Calls to /api/playlists."""
 
-from aioaudiobookshelf.exceptions import ApiError
 from aioaudiobookshelf.schema.calls_playlists import (
     AllPlaylistsResponse,
     CreatePlaylistParameters,
@@ -37,9 +36,6 @@ class PlaylistsClient(BaseClient):
         data = await self._patch(
             endpoint=f"/api/playlists/{playlist_id}", data=parameters.to_dict()
         )
-        if not data:
-            # abs answered without json, so there is no playlist to return
-            raise ApiError(f"Update of playlist {playlist_id} returned no playlist.")
         return PlaylistExpanded.from_json(data)
 
     async def delete_playlist(self, *, playlist_id: str) -> None:
@@ -61,8 +57,6 @@ class PlaylistsClient(BaseClient):
         if item.episode_id is not None:
             endpoint += f"/{item.episode_id}"
         data = await self._delete(endpoint=endpoint)
-        if not data:
-            raise ApiError(f"Removing an item from playlist {playlist_id} returned no playlist.")
         return PlaylistExpanded.from_json(data)
 
     async def add_item_to_playlist_batch(
