@@ -77,7 +77,7 @@ async def get_login_response(
 
     try:
         resp = await session_config.session.post(
-            f"{session_config.url}/login",
+            session_config.url_for("login"),
             json=login_request,
             ssl=session_config.verify_ssl,
             raise_for_status=True,

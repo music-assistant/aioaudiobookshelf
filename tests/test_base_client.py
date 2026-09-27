@@ -61,3 +61,20 @@ async def test_response_status_is_mapped(
     """Abs' status decides the error, read from a property aiohttp does not deprecate."""
     with pytest.raises(expected):
         await call(_client(status))
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("http://abs.local", "http://abs.local"),
+        ("http://abs.local:13378", "http://abs.local:13378"),  # abs' own default
+        ("http://abs.local:8080/", "http://abs.local:8080"),
+        ("https://example.com/abs/", "https://example.com/abs"),
+    ],
+)
+async def test_the_url_carries_no_double_slash(url: str, expected: str) -> None:
+    """Abs routes /api/..., and //api works only because abs rewrites it."""
+    session_config = SessionConfiguration(session=Mock(), url=url, access_token="access1")
+
+    assert session_config.url_for("/api/me") == f"{expected}/api/me"
+    assert session_config.url_for("login") == f"{expected}/login"
