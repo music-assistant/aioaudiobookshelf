@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      # the 0.1.x maintenance line, for a hotfix while stable is pinned to it
+      - 0.1.x
   pull_request:
   workflow_dispatch:
 
