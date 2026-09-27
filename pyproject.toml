@@ -14,7 +14,8 @@ classifiers = [
 dependencies = [
   "aiohttp",
   "mashumaro",
-  "python-socketio>=5.12",
+  # the socket client leans on 5.x reconnect and dispatch behaviour, see client/__init__.py
+  "python-socketio>=5.12,<6",
 ]
 description = "Async library for Audiobookshelf"
 license = {text = "Apache-2.0"}
