@@ -88,7 +88,7 @@ class BaseClient:
         try:
             response = await _request()
         except ClientResponseError as exc:
-            if exc.code == 401:
+            if exc.status == 401:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
@@ -99,7 +99,7 @@ class BaseClient:
                         raise ApiError(f"API POST call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
-            elif exc.code == 404:
+            elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API POST call to {endpoint} failed.") from exc
@@ -152,7 +152,7 @@ class BaseClient:
             if response.content_type == "application/json" and response.status == 200:
                 return await response.read()
         except ClientResponseError as exc:
-            if exc.code == 401:
+            if exc.status == 401:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
@@ -162,7 +162,7 @@ class BaseClient:
                         raise ApiError(f"API PATCH call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
-            elif exc.code == 404:
+            elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API PATCH call to {endpoint} failed.") from exc
@@ -185,7 +185,7 @@ class BaseClient:
             if response.content_type == "application/json" and response.status == 200:
                 return await response.read()
         except ClientResponseError as exc:
-            if exc.code == 401:
+            if exc.status == 401:
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
@@ -195,7 +195,7 @@ class BaseClient:
                         raise ApiError(f"API DELETE call to {endpoint} failed.") from inner_exc
                 else:
                     raise AccessTokenExpiredError from exc
-            elif exc.code == 404:
+            elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
