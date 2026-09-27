@@ -1,0 +1,66 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        run: pip install uv
+      - name: Cache uv packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-lint-${{ hashFiles('pyproject.toml') }}
+      - name: Install dependencies
+        run: uv pip install --system . .[test]
+      - name: Lint with pre-commit
+        # the test job runs pytest across every supported version
+        env:
+          SKIP: pytest
+        run: pre-commit run --all-files
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.14 is what Music Assistant runs the library on
+        python-version: ["3.12", "3.13", "3.14"]
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v7
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: pip install uv
+      - name: Cache uv packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+      - name: Install dependencies
+        run: uv pip install --system . .[test]
+      - name: Pytest
+        run: pytest -q --durations 10
