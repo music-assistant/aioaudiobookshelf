@@ -82,8 +82,13 @@ NAME_KEYS = {"username": "listener", "email": "listener@example.com"}
 # what must never survive sanitising, whatever key it hides under
 SECRET_SHAPES = (re.compile(r"eyJ[\w-]{10,}"), re.compile(r"token=[^&\s\"]+"))
 
-# account wide endpoints: name, endpoint, the schema the client decodes it with
-ACCOUNT = [
+# an endpoint to capture: its fixture name, where to ask, and the schema the
+# client decodes the answer with. A library endpoint also carries its query.
+Account = tuple[str, str, str]
+Endpoint = tuple[str, str, str, dict[str, Any]]
+
+# account wide endpoints
+ACCOUNT: list[Account] = [
     ("me", "/api/me", "user.User"),
     ("items_in_progress", "/api/me/items-in-progress", "calls_me.ItemsInProgressResponse"),
     ("listening_sessions", "/api/me/listening-sessions", "calls_me.MeListeningSessionsResponse"),
@@ -92,9 +97,9 @@ ACCOUNT = [
 ]
 
 # per library, {} being the library's own endpoint
-PAGED = {"limit": KEEP, "page": 0}
-MINIFIED = PAGED | {"minified": 1}
-LIBRARY = [
+PAGED: dict[str, Any] = {"limit": KEEP, "page": 0}
+MINIFIED: dict[str, Any] = PAGED | {"minified": 1}
+LIBRARY: list[Endpoint] = [
     ("library", "{}", "library.Library", {}),
     (
         "library_with_filterdata",
@@ -110,7 +115,7 @@ LIBRARY = [
     ("playlists", "{}/playlists", "calls_library.LibraryPlaylistsResponse", PAGED),
 ]
 # what SocketClient decodes each event with, so the report covers them too
-EVENT_MODELS = {
+EVENT_MODELS: dict[str, str] = {
     "user_updated": "user.User",
     "user_item_progress_updated": "events_socket.UserItemProgressUpdatedEvent",
     "item_added": "library.LibraryItemExpanded",
@@ -134,7 +139,7 @@ EVENT_MODELS = {
 }
 
 # only a book library answers these
-BOOK_ONLY = [
+BOOK_ONLY: list[Endpoint] = [
     ("authors", "{}/authors", "calls_library.LibraryAuthorsResponse", {}),
     ("narrators", "{}/narrators", "calls_library.LibraryNarratorsResponse", {}),
 ]
