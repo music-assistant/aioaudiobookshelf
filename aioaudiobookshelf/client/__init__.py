@@ -84,12 +84,8 @@ class SocketClient:
             ssl_verify=self.session_config.verify_ssl,
         )
 
-        if self.session_config.logger is None:
-            self.logger = logging.getLogger(__name__)
-            logging.basicConfig()
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger = self.session_config.logger
+        # configuring logging is the caller's business, not a library's
+        self.logger = self.session_config.logger or logging.getLogger(__name__)
 
         self.set_item_callbacks()
         self.set_user_callbacks()
