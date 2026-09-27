@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 from typing import TypeVar
 
 from mashumaro.codecs.json import json_decode
-from mashumaro.mixins.json import DataClassJSONMixin
 
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.schema.author import AuthorExpanded, Narrator
@@ -17,6 +16,7 @@ from aioaudiobookshelf.schema.calls_library import (
     LibraryPlaylistsResponse,
     LibrarySeriesMinifiedResponse,
     LibraryWithFilterDataResponse,
+    _LibraryPaginationResponseBase,
 )
 from aioaudiobookshelf.schema.library import Library, LibraryFilterData
 from aioaudiobookshelf.schema.shelf import (
@@ -28,8 +28,8 @@ from aioaudiobookshelf.schema.shelf import (
     ShelfSeries,
 )
 
-ResponseMinified = TypeVar("ResponseMinified", bound=DataClassJSONMixin)
-ResponseNormal = TypeVar("ResponseNormal", bound=DataClassJSONMixin)
+ResponseMinified = TypeVar("ResponseMinified", bound=_LibraryPaginationResponseBase)
+ResponseNormal = TypeVar("ResponseNormal", bound=_LibraryPaginationResponseBase)
 
 
 class LibrariesClient(BaseClient):
@@ -77,10 +77,15 @@ class LibrariesClient(BaseClient):
             params["page"] = page_cnt
             response = await self._get(endpoint, params)
             page_cnt += 1
-            if minified:
-                yield response_cls_minified.from_json(response)
-            else:
-                yield response_cls.from_json(response)
+            page = (
+                response_cls_minified.from_json(response)
+                if minified
+                else response_cls.from_json(response)
+            )
+            yield page
+            # abs answers with limit 0 when it ignored paging and sent everything at once
+            if page.limit <= 0 or page_cnt * page.limit >= page.total:
+                return
 
     async def get_library_items(
         self, *, library_id: str, filter_str: str | None = None
@@ -143,7 +148,7 @@ class LibrariesClient(BaseClient):
     async def get_library_playlists(
         self, *, library_id: str
     ) -> AsyncGenerator[LibraryPlaylistsResponse]:
-        """Get collections in that library.
+        """Get playlists in that library.
 
         Returns only minified items at this point.
         """
