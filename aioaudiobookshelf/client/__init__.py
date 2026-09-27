@@ -19,12 +19,13 @@ from aioaudiobookshelf.schema.author import Author, AuthorExpanded
 from aioaudiobookshelf.schema.events_socket import (
     AuthorRemoved,
     LibraryItemRemoved,
+    PodcastEpisodeAdded,
     PodcastEpisodeDownload,
     StreamError,
     StreamReset,
     UserItemProgressUpdatedEvent,
 )
-from aioaudiobookshelf.schema.library import LibraryItemExpanded
+from aioaudiobookshelf.schema.library import Library, LibraryItemExpanded
 from aioaudiobookshelf.schema.media_progress import MediaProgress
 from aioaudiobookshelf.schema.playlist import PlaylistExpanded
 from aioaudiobookshelf.schema.streams import Stream, StreamProgress
@@ -91,6 +92,8 @@ class SocketClient:
 
         self.set_item_callbacks()
         self.set_user_callbacks()
+        self.set_library_callbacks()
+        self.set_episode_callbacks()
         self.set_podcast_episode_download_callbacks()
         self.set_refresh_token_expired_callback()
         self.set_stream_callbacks()
@@ -129,6 +132,26 @@ class SocketClient:
         self.on_user_updated = on_user_updated
         self.on_user_item_progress_updated = on_user_item_progress_updated
         self.on_user_session_closed = on_user_session_closed
+
+    def set_library_callbacks(
+        self,
+        *,
+        on_library_added: Callable[[Library], Coroutine[Any, Any, None]] | None = None,
+        on_library_updated: Callable[[Library], Coroutine[Any, Any, None]] | None = None,
+        on_library_removed: Callable[[Library], Coroutine[Any, Any, None]] | None = None,
+    ) -> None:
+        """Set library callbacks. Abs only sends these to users who may see the library."""
+        self.on_library_added = on_library_added
+        self.on_library_updated = on_library_updated
+        self.on_library_removed = on_library_removed
+
+    def set_episode_callbacks(
+        self,
+        *,
+        on_episode_added: Callable[[PodcastEpisodeAdded], Coroutine[Any, Any, None]] | None = None,
+    ) -> None:
+        """Set podcast episode callbacks."""
+        self.on_episode_added = on_episode_added
 
     def set_podcast_episode_download_callbacks(
         self,
@@ -204,7 +227,12 @@ class SocketClient:
         self._on_event("items_added", self._on_items_added)
         self._on_event("items_updated", self._on_items_updated)
 
+        self._on_event("episode_added", self._on_episode_added)
         self._on_event("episode_download_finished", self._on_episode_download_finished)
+
+        self._on_event("library_added", self._on_library_added)
+        self._on_event("library_updated", self._on_library_updated)
+        self._on_event("library_removed", self._on_library_removed)
 
         self._on_event("stream_open", self._on_stream_open)
         self._on_event("stream_closed", self._on_stream_closed)
@@ -349,6 +377,22 @@ class SocketClient:
     async def _on_items_updated(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_updated is not None:
             await self.on_items_updated([LibraryItemExpanded.from_payload(x) for x in data])
+
+    async def _on_episode_added(self, data: dict[str, Any]) -> None:
+        if self.on_episode_added is not None:
+            await self.on_episode_added(PodcastEpisodeAdded.from_payload(data))
+
+    async def _on_library_added(self, data: dict[str, Any]) -> None:
+        if self.on_library_added is not None:
+            await self.on_library_added(Library.from_payload(data))
+
+    async def _on_library_updated(self, data: dict[str, Any]) -> None:
+        if self.on_library_updated is not None:
+            await self.on_library_updated(Library.from_payload(data))
+
+    async def _on_library_removed(self, data: dict[str, Any]) -> None:
+        if self.on_library_removed is not None:
+            await self.on_library_removed(Library.from_payload(data))
 
     async def _on_episode_download_finished(self, data: dict[str, Any]) -> None:
         if self.on_episode_download_finished is not None:
