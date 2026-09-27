@@ -37,11 +37,15 @@ class ServerSettingsTimeFormat(StrEnum):
 
 
 class ServerLogLevel(Enum):
-    """ServerLogLevel."""
+    """ServerLogLevel, see abs' utils/constants.js."""
 
+    TRACE = 0
     DEBUG = 1
     INFO = 2
-    WARNING = 3
+    WARNING = 3  # WARN in abs
+    ERROR = 4
+    FATAL = 5
+    NOTE = 6
 
 
 @dataclass(kw_only=True)
