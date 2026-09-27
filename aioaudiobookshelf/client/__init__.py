@@ -1,7 +1,7 @@
 """Clients for Audiobookshelf."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from typing import Any
 from urllib.parse import urlparse
 
@@ -100,11 +100,13 @@ class SocketClient:
     def set_item_callbacks(
         self,
         *,
-        on_item_added: Callable[[LibraryItemExpanded], Any] | None = None,
-        on_item_updated: Callable[[LibraryItemExpanded], Any] | None = None,
-        on_item_removed: Callable[[LibraryItemRemoved], Any] | None = None,
-        on_items_added: Callable[[list[LibraryItemExpanded]], Any] | None = None,
-        on_items_updated: Callable[[list[LibraryItemExpanded]], Any] | None = None,
+        on_item_added: Callable[[LibraryItemExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_item_updated: Callable[[LibraryItemExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_item_removed: Callable[[LibraryItemRemoved], Coroutine[Any, Any, None]] | None = None,
+        on_items_added: Callable[[list[LibraryItemExpanded]], Coroutine[Any, Any, None]]
+        | None = None,
+        on_items_updated: Callable[[list[LibraryItemExpanded]], Coroutine[Any, Any, None]]
+        | None = None,
     ) -> None:
         """Set item callbacks."""
         self.on_item_added = on_item_added
@@ -116,9 +118,10 @@ class SocketClient:
     def set_user_callbacks(
         self,
         *,
-        on_user_updated: Callable[[User], Any] | None = None,
-        on_user_item_progress_updated: Callable[[str, MediaProgress], Any] | None = None,
-        on_user_session_closed: Callable[[str], Any] | None = None,
+        on_user_updated: Callable[[User], Coroutine[Any, Any, None]] | None = None,
+        on_user_item_progress_updated: Callable[[str, MediaProgress], Coroutine[Any, Any, None]]
+        | None = None,
+        on_user_session_closed: Callable[[str], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set user callbacks. on_user_session_closed receives the session's id."""
         self.on_user_updated = on_user_updated
@@ -126,13 +129,16 @@ class SocketClient:
         self.on_user_session_closed = on_user_session_closed
 
     def set_podcast_episode_download_callbacks(
-        self, *, on_episode_download_finished: Callable[[PodcastEpisodeDownload], Any] | None = None
+        self,
+        *,
+        on_episode_download_finished: Callable[[PodcastEpisodeDownload], Coroutine[Any, Any, None]]
+        | None = None,
     ) -> None:
         """Set podcast episode download callbacks."""
         self.on_episode_download_finished = on_episode_download_finished
 
     def set_refresh_token_expired_callback(
-        self, *, on_refresh_token_expired: Callable[[], Any] | None = None
+        self, *, on_refresh_token_expired: Callable[[], Coroutine[Any, Any, None]] | None = None
     ) -> None:
         """Set refresh token expired callback."""
         self.on_refresh_token_expired = on_refresh_token_expired
@@ -140,12 +146,12 @@ class SocketClient:
     def set_stream_callbacks(
         self,
         *,
-        on_stream_open: Callable[[Stream], Any] | None = None,
-        on_stream_closed: Callable[[str], Any] | None = None,
-        on_stream_progress: Callable[[StreamProgress], Any] | None = None,
-        on_stream_ready: Callable[[], Any] | None = None,
-        on_stream_reset: Callable[[StreamReset], Any] | None = None,
-        on_stream_error: Callable[[StreamError], Any] | None = None,
+        on_stream_open: Callable[[Stream], Coroutine[Any, Any, None]] | None = None,
+        on_stream_closed: Callable[[str], Coroutine[Any, Any, None]] | None = None,
+        on_stream_progress: Callable[[StreamProgress], Coroutine[Any, Any, None]] | None = None,
+        on_stream_ready: Callable[[], Coroutine[Any, Any, None]] | None = None,
+        on_stream_reset: Callable[[StreamReset], Coroutine[Any, Any, None]] | None = None,
+        on_stream_error: Callable[[StreamError], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set stream callback."""
         self.on_stream_open = on_stream_open
@@ -158,9 +164,9 @@ class SocketClient:
     def set_playlist_callbacks(
         self,
         *,
-        on_playlist_added: Callable[[PlaylistExpanded], Any] | None = None,
-        on_playlist_updated: Callable[[PlaylistExpanded], Any] | None = None,
-        on_playlist_removed: Callable[[PlaylistExpanded], Any] | None = None,
+        on_playlist_added: Callable[[PlaylistExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_playlist_updated: Callable[[PlaylistExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_playlist_removed: Callable[[PlaylistExpanded], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set playlist callbacks."""
         self.on_playlist_added = on_playlist_added
@@ -170,10 +176,10 @@ class SocketClient:
     def set_author_callbacks(
         self,
         *,
-        on_author_added: Callable[[Author], Any] | None = None,
-        on_author_updated: Callable[[AuthorExpanded], Any] | None = None,
-        on_author_removed: Callable[[AuthorRemoved], Any] | None = None,
-        on_authors_added: Callable[[list[Author]], Any] | None = None,
+        on_author_added: Callable[[Author], Coroutine[Any, Any, None]] | None = None,
+        on_author_updated: Callable[[AuthorExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_author_removed: Callable[[AuthorRemoved], Coroutine[Any, Any, None]] | None = None,
+        on_authors_added: Callable[[list[Author]], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set author callbacks."""
         self.on_author_added = on_author_added
