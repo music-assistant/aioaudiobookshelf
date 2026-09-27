@@ -19,5 +19,5 @@ class FileMetadata(_BaseModel):
     size: int | None = None  # in bytes
     # might not be present, see https://github.com/music-assistant/support/issues/3914
     modified_time_ms: Annotated[int | None, Alias("mtimeMs")] = None
-    changed_time_ms: Annotated[int | None, Alias("ctimeMs")]
+    changed_time_ms: Annotated[int | None, Alias("ctimeMs")] = None
     created_time_ms: Annotated[int | None, Alias("birthtimeMs")] = 0  # 0 if unknown

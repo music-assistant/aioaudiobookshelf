@@ -40,6 +40,14 @@ class PodcastEpisodeDownload(_BaseModel):
 
 
 @dataclass(kw_only=True)
+class AuthorRemoved(_BaseModel):
+    """AuthorRemoved. Abs sends no more than this, see its routers/ApiRouter.js."""
+
+    id_: Annotated[str, Alias("id")]
+    library_id: Annotated[str, Alias("libraryId")]
+
+
+@dataclass(kw_only=True)
 class LibraryItemRemoved(_BaseModel):
     """LibraryItemRemoved."""
 

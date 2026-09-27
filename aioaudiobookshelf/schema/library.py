@@ -20,8 +20,9 @@ from .podcast import Podcast, PodcastExpanded, PodcastMinified
 
 
 class LibraryIcons(StrEnum):
-    """LibraryIcons."""
+    """LibraryIcons. Abs adds new ones from time to time."""
 
+    UNKNOWN = "unknown"
     DATABASE = "database"
     AUDIOBOOKSHELF = "audiobookshelf"
     BOOKS1 = "books-1"
@@ -39,6 +40,10 @@ class LibraryIcons(StrEnum):
     POWER = "power"
     START = "star"
     HEART = "heart"
+
+    @classmethod
+    def _missing_(cls, _: object) -> "LibraryIcons":
+        return cls.UNKNOWN
 
 
 class LibraryMediaType(StrEnum):
@@ -96,9 +101,9 @@ class _LibraryItemBase(_BaseModel):
     path: str
     relative_path: Annotated[str, Alias("relPath")]
     is_file: Annotated[bool, Alias("isFile")]
-    modified_time_ms: Annotated[int, Alias("mtimeMs")]
-    changed_time_ms: Annotated[int, Alias("ctimeMs")]
-    created_time_ms: Annotated[int, Alias("birthtimeMs")]  # epoch
+    modified_time_ms: Annotated[int | None, Alias("mtimeMs")] = None
+    changed_time_ms: Annotated[int | None, Alias("ctimeMs")] = None
+    created_time_ms: Annotated[int | None, Alias("birthtimeMs")] = None  # epoch
     added_at: Annotated[int, Alias("addedAt")]
     updated_at: Annotated[int, Alias("updatedAt")]  # ms epoch
     is_missing: Annotated[bool, Alias("isMissing")]

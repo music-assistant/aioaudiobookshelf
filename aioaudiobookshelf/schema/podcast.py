@@ -84,7 +84,7 @@ class _PodcastEpisodeBase(_BaseModel):
 class PodcastEpisode(_PodcastEpisodeBase):
     """PodcastEpisode."""
 
-    audio_file: AudioFile | None = None
+    audio_file: Annotated[AudioFile | None, Alias("audioFile")] = None
     enclosure: PodcastEpisodeEnclosure | None = None
 
 
@@ -95,7 +95,7 @@ class PodcastEpisodeExpanded(_PodcastEpisodeBase):
     audio_track: Annotated[AudioTrack, Alias("audioTrack")]
     duration: float
     size: int
-    audio_file: AudioFile | None = None
+    audio_file: Annotated[AudioFile | None, Alias("audioFile")] = None
     enclosure: PodcastEpisodeEnclosure | None = None
 
 
@@ -105,7 +105,7 @@ class _PodcastBase(_BaseModel):
 
     cover_path: Annotated[str | None, Alias("coverPath")] = None
     auto_download_episodes: Annotated[bool, Alias("autoDownloadEpisodes")]
-    auto_download_schedule: Annotated[str, Alias("autoDownloadSchedule")]
+    auto_download_schedule: Annotated[str | None, Alias("autoDownloadSchedule")] = None
     # None is not documented
     last_episode_check_ms: Annotated[int | None, Alias("lastEpisodeCheck")] = None
     max_episodes_to_keep: Annotated[int, Alias("maxEpisodesToKeep")]  # 0 = all

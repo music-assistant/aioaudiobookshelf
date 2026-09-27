@@ -48,10 +48,12 @@ class PlaybackSession(_BaseModel):
     library_item_id: Annotated[str, Alias("libraryItemId")]
     episode_id: Annotated[str | None, Alias("episodeId")] = None
     media_type: Annotated[str, Alias("mediaType")]
-    media_metadata: Annotated[PodcastMetadata | BookMetadata, Alias("mediaMetadata")]
+    # BookMetadata first: it needs authors, narrators and series, which a podcast
+    # does not send, while PodcastMetadata would happily swallow a book
+    media_metadata: Annotated[BookMetadata | PodcastMetadata, Alias("mediaMetadata")]
     display_title: Annotated[str, Alias("displayTitle")]
-    display_author: Annotated[str, Alias("displayAuthor")]
-    cover_path: Annotated[str, Alias("coverPath")]
+    display_author: Annotated[str | None, Alias("displayAuthor")] = None
+    cover_path: Annotated[str | None, Alias("coverPath")] = None
     duration: float
     # 0: direct play, 1: direct stream, 2: transcode, 3: local
     play_method: Annotated[PlaybackMethod, Alias("playMethod")]

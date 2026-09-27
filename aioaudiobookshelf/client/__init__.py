@@ -16,6 +16,7 @@ from aioaudiobookshelf.exceptions import (
 )
 from aioaudiobookshelf.schema.author import Author, AuthorExpanded
 from aioaudiobookshelf.schema.events_socket import (
+    AuthorRemoved,
     LibraryItemRemoved,
     PodcastEpisodeDownload,
     StreamError,
@@ -172,7 +173,7 @@ class SocketClient:
         *,
         on_author_added: Callable[[Author], Any] | None = None,
         on_author_updated: Callable[[AuthorExpanded], Any] | None = None,
-        on_author_removed: Callable[[Author], Any] | None = None,
+        on_author_removed: Callable[[AuthorRemoved], Any] | None = None,
         on_authors_added: Callable[[list[Author]], Any] | None = None,
     ) -> None:
         """Set author callbacks."""
@@ -375,7 +376,7 @@ class SocketClient:
 
     async def _on_author_removed(self, data: dict[str, Any]) -> None:
         if self.on_author_removed is not None:
-            await self.on_author_removed(Author.from_dict(data))
+            await self.on_author_removed(AuthorRemoved.from_dict(data))
 
     async def _on_authors_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_authors_added is not None:

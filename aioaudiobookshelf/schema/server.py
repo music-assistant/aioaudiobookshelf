@@ -63,7 +63,8 @@ class ServerSettings(_BaseModel):
     metadata_file_format: Annotated[ServerSettingsMetadataFileFormat, Alias("metadataFileFormat")]
     rate_limit_login_requests: Annotated[int, Alias("rateLimitLoginRequests")]
     rate_limit_login_window: Annotated[int, Alias("rateLimitLoginWindow")]  # ms
-    backup_schedule: Annotated[str, Alias("backupSchedule")]
+    # abs sends false when auto backups are off
+    backup_schedule: Annotated[str | bool, Alias("backupSchedule")]
     backups_to_keep: Annotated[int, Alias("backupsToKeep")]
     max_backup_size: Annotated[int, Alias("maxBackupSize")]  # GB
     logger_daily_logs_to_keep: Annotated[int, Alias("loggerDailyLogsToKeep")]
