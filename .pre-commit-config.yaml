@@ -92,7 +92,7 @@ repos:
         language: script
         types: [python]
         require_serial: true
-        files: ^aioaudiobookshelf/.+\.py$
+        files: ^(aioaudiobookshelf|scripts)/.+\.py$
       - id: pytest
         name: 🧪 Run tests
         language: system

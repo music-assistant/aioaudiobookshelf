@@ -131,6 +131,9 @@ select = ["ALL"]
   "S105", # fake tokens in tests
   "S106", # fake tokens in tests
 ]
+"scripts/*" = [
+  "T201", # a developer tool reports on stdout
+]
 
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
