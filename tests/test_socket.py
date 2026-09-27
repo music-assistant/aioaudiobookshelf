@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+import socketio.exceptions
 
 from aioaudiobookshelf.client import SocketClient
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
@@ -19,6 +20,7 @@ Handler = Callable[..., Coroutine[Any, Any, None]]
 
 # what the handlers log for an error they did not expect
 GUARD_LOG = "Could not handle a rejected socket authentication."
+CALLBACK_LOG = "The refresh token expired callback failed."
 
 
 class FakeSocketIoClient:
@@ -187,8 +189,8 @@ async def test_known_refresh_failure_handled_quietly(
     assert GUARD_LOG not in caplog.text
 
 
-async def test_unexpected_error_is_logged(caplog: pytest.LogCaptureFixture) -> None:
-    """An error socketio would drop silently is logged instead."""
+async def test_a_failing_callback_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """The callback belongs to the caller, and socketio would drop what it raises."""
 
     async def on_refresh_token_expired() -> None:
         raise ValueError("relogin failed")
@@ -200,6 +202,19 @@ async def test_unexpected_error_is_logged(caplog: pytest.LogCaptureFixture) -> N
             refresh_token="refresh1",
         ),
         on_refresh_token_expired=on_refresh_token_expired,
+    )
+
+    with caplog.at_level(logging.ERROR):
+        await socket_io.auth_failed()
+
+    assert CALLBACK_LOG in caplog.text
+
+
+async def test_a_socketio_error_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """Socketio runs the handler in its own task and drops whatever it raises."""
+    socket_io = await _socket(_session_config(token="api_key"))
+    socket_io.disconnect = AsyncMock(  # type: ignore[method-assign]
+        side_effect=socketio.exceptions.BadNamespaceError
     )
 
     with caplog.at_level(logging.ERROR):
