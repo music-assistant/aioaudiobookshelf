@@ -63,11 +63,18 @@ async def test_response_status_is_mapped(
         await call(_client(status))
 
 
-async def test_the_url_carries_no_double_slash() -> None:
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("http://abs.local", "http://abs.local"),
+        ("http://abs.local:13378", "http://abs.local:13378"),  # abs' own default
+        ("http://abs.local:8080/", "http://abs.local:8080"),
+        ("https://example.com/abs/", "https://example.com/abs"),
+    ],
+)
+async def test_the_url_carries_no_double_slash(url: str, expected: str) -> None:
     """Abs routes /api/..., and //api works only because abs rewrites it."""
-    session_config = SessionConfiguration(
-        session=Mock(), url="http://abs.local/", access_token="access1"
-    )
+    session_config = SessionConfiguration(session=Mock(), url=url, access_token="access1")
 
-    assert session_config.url_for("/api/me") == "http://abs.local/api/me"
-    assert session_config.url_for("login") == "http://abs.local/login"
+    assert session_config.url_for("/api/me") == f"{expected}/api/me"
+    assert session_config.url_for("login") == f"{expected}/login"
