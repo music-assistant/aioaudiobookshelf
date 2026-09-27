@@ -29,6 +29,14 @@ class RefreshTokenExpiredError(AbsAuthError):
     """Exception raised if refresh token expired."""
 
 
+class TokenNotRenewableError(AbsAuthError):
+    """Raised if abs rejected the token and there is nothing to renew it with.
+
+    An api key or a pre v2.26 token cannot be refreshed. Abs deactivates an
+    expired api key, see its auth/TokenManager.js.
+    """
+
+
 class AbsApiError(AbsError):
     """Base exception for API call errors."""
 

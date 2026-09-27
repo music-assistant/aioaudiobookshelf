@@ -27,6 +27,8 @@ def _client(status: int) -> UserClient:
         ),
         url="http://abs.local",
         access_token="access1",
+        # without one a 401 is not an expired access token, see test_api_key_rejected
+        refresh_token="refresh1",
         auto_refresh=False,
     )
     client.logger = logging.getLogger(__name__)
