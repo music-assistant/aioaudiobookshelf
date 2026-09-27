@@ -3,6 +3,7 @@
 import logging
 from collections.abc import Callable
 from typing import Any
+from urllib.parse import urlparse
 
 import socketio
 import socketio.exceptions
@@ -216,7 +217,12 @@ class SocketClient:
         self.client.on("author_removed", handler=self._on_author_removed)
         self.client.on("authors_added", handler=self._on_authors_added)
 
-        await self.client.connect(url=self.session_config.url)
+        # engineio builds its url from the host alone, so a base path has to be
+        # passed separately. abs serves a socket for it, see its SocketAuthority.js
+        base_path = urlparse(self.session_config.url).path
+        await self.client.connect(
+            url=self.session_config.url, socketio_path=f"{base_path}/socket.io"
+        )
 
     async def shutdown(self) -> None:
         """Shutdown client (disconnect, or stop reconnect attempt)."""
