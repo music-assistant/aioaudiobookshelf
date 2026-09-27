@@ -293,25 +293,9 @@ class SocketClient:
         await self._authenticate()
 
     async def _on_connect_error(self, *_: Any) -> None:
-        # socketio runs handlers in their own task, so errors would go unnoticed
-        try:
-            await self._handle_connect_error()
-        except Exception:
-            self.logger.exception("Could not handle a socket connection error.")
-
-    async def _handle_connect_error(self) -> None:
-        if not self.session_config.auto_refresh or self.session_config.access_token is None:
-            return
-        # try to refresh token
-        self.logger.debug("Auto refreshing token")
-        try:
-            await self.session_config.refresh()
-        except RefreshTokenExpiredError:
-            if self.on_refresh_token_expired is not None:
-                await self.on_refresh_token_expired()
-        except AbsError:
-            # socketio will continue trying to reconnect.
-            return
+        # abs rejects a token with auth_failed, never here, so there is nothing to renew:
+        # the server was not reachable, and socketio keeps reconnecting on its own
+        self.logger.debug("Socket could not connect, socketio will retry.")
 
     async def _on_user_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_updated is not None:
