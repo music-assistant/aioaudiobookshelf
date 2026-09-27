@@ -17,14 +17,18 @@ from aioaudiobookshelf.exceptions import (
 from aioaudiobookshelf.schema.calls_session import SyncOpenSessionParameters
 
 
-def _client(status: int) -> SessionClient:
-    error = ClientResponseError(request_info=Mock(), history=(), status=status)
+def _client(*statuses: int) -> SessionClient:
+    errors = [
+        ClientResponseError(request_info=Mock(), history=(), status=status) for status in statuses
+    ]
     client = SessionClient.__new__(SessionClient)
     client.session_config = SessionConfiguration(
-        session=Mock(post=AsyncMock(side_effect=error)),
+        session=Mock(post=AsyncMock(side_effect=errors)),
         url="http://abs.local",
         access_token="access1",
+        refresh_token="refresh1",
     )
+    client.session_config.refresh = AsyncMock()  # type: ignore[method-assign]
     client.logger = logging.getLogger(__name__)
     return client
 
@@ -43,6 +47,12 @@ async def test_sync_of_a_gone_session(expected: type[Exception]) -> None:
     """A session abs no longer has is reported as both, so either catch keeps working."""
     with pytest.raises(expected):
         await _sync(_client(404))
+
+
+async def test_sync_of_a_gone_session_after_a_refresh() -> None:
+    """The call repeated after a token refresh has to keep what abs answered."""
+    with pytest.raises(SessionSyncNotFoundError):
+        await _sync(_client(401, 404))
 
 
 async def test_sync_failure_is_not_a_missing_session() -> None:

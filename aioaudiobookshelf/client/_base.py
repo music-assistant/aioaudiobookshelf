@@ -91,6 +91,8 @@ class BaseClient:
         except (ClientConnectionError, TimeoutError) as err:
             raise ServiceUnavailableError from err
         except ClientResponseError as err:
+            if err.status == 404:
+                raise NotFoundError from err
             raise ApiError(error_message) from err
 
     async def _post(
