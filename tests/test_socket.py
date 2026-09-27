@@ -264,3 +264,11 @@ async def test_user_session_closed_reaches_the_callback() -> None:
     await socket_io.trigger("user_session_closed", "session1")
 
     assert closed == ["session1"]
+
+
+async def test_a_connect_without_a_token_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """Socketio drops what a handler raises, so the connect handler has to log it itself."""
+    with caplog.at_level(logging.ERROR):
+        await _socket(_session_config())
+
+    assert "Could not authenticate the socket connection." in caplog.text

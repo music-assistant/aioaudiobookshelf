@@ -237,7 +237,12 @@ class SocketClient:
 
     async def _on_connect(self) -> None:
         self._auth_retried = False
-        await self._authenticate()
+        try:
+            await self._authenticate()
+        except (AbsError, socketio.exceptions.SocketIOError):
+            # socketio drops what a handler raises, so this would go unnoticed
+            self.logger.exception("Could not authenticate the socket connection.")
+            return
         self.logger.debug("Socket connected.")
 
     async def _authenticate(self) -> None:
