@@ -120,6 +120,8 @@ EVENT_MODELS: dict[str, str] = {
     "user_item_progress_updated": "events_socket.UserItemProgressUpdatedEvent",
     "item_added": "library.LibraryItemExpanded",
     "item_updated": "library.LibraryItemExpanded",
+    "items_added": "library.LibraryItemExpanded",
+    "items_updated": "library.LibraryItemExpanded",
     "item_removed": "events_socket.LibraryItemRemoved",
     "episode_added": "events_socket.PodcastEpisodeAdded",
     "episode_download_finished": "events_socket.PodcastEpisodeDownload",
@@ -336,8 +338,7 @@ def model_for(name: str, manifest: dict[str, Any]) -> str:
     """Name the schema a fixture should decode as. An event knows its own."""
     if name.startswith("event_"):
         return EVENT_MODELS.get(name.removeprefix("event_").removesuffix(".json"), "")
-    entry = manifest.get(name)
-    return str(entry["model"]) if entry else ""
+    return str(manifest.get(name, {}).get("model", ""))
 
 
 def report() -> int:
