@@ -181,13 +181,11 @@ class SocketClient:
         on_author_added: Callable[[Author], Coroutine[Any, Any, None]] | None = None,
         on_author_updated: Callable[[AuthorExpanded], Coroutine[Any, Any, None]] | None = None,
         on_author_removed: Callable[[AuthorRemoved], Coroutine[Any, Any, None]] | None = None,
-        on_authors_added: Callable[[list[Author]], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set author callbacks."""
         self.on_author_added = on_author_added
         self.on_author_updated = on_author_updated
         self.on_author_removed = on_author_removed
-        self.on_authors_added = on_authors_added
 
     async def init_client(self) -> None:
         """Initialize the client."""
@@ -222,7 +220,6 @@ class SocketClient:
         self._on_event("author_added", self._on_author_added)
         self._on_event("author_updated", self._on_author_updated)
         self._on_event("author_removed", self._on_author_removed)
-        self._on_event("authors_added", self._on_authors_added)
 
         # engineio builds its url from the host alone, so a base path has to be
         # passed separately. abs serves a socket for it, see its SocketAuthority.js
@@ -404,7 +401,3 @@ class SocketClient:
     async def _on_author_removed(self, data: dict[str, Any]) -> None:
         if self.on_author_removed is not None:
             await self.on_author_removed(AuthorRemoved.from_payload(data))
-
-    async def _on_authors_added(self, data: list[dict[str, Any]]) -> None:
-        if self.on_authors_added is not None:
-            await self.on_authors_added([Author.from_payload(x) for x in data])
