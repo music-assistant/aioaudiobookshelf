@@ -202,7 +202,7 @@ class SocketClient:
         self.on_author_updated = on_author_updated
         self.on_author_removed = on_author_removed
 
-    async def init_client(self, *, retry: bool = False, wait_timeout: int = 1) -> None:
+    async def init_client(self, *, retry: bool = False, wait_timeout: float = 1) -> None:
         """Initialize the client. The defaults are socketio's own.
 
         retry=True keeps trying, but reconnection_attempts is 0, so the call
