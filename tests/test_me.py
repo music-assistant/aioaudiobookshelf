@@ -1,5 +1,9 @@
 """Tests for /api/me calls."""
 
+import json
+from math import ceil
+from typing import Any
+
 from aioaudiobookshelf.client.me import MeClient
 
 from .helpers import RecordingSession, make_client
@@ -54,3 +58,41 @@ async def test_items_in_progress_asks_abs_for_its_own_limit() -> None:
 
     assert session.urls[0].endswith("/api/me/items-in-progress")
     assert session.calls[0].params == {"limit": 5}
+
+
+def _session_pages(total: int, items_per_page: int) -> Any:
+    """Answer with abs' listening session paging counts, the sessions do not matter here."""
+
+    def body(params: Any) -> bytes:
+        page = {
+            "total": total,
+            "numPages": ceil(total / items_per_page) if items_per_page else 0,
+            "itemsPerPage": items_per_page,
+            "page": params["page"],
+            "sessions": [],
+        }
+        return json.dumps(page).encode()
+
+    return body
+
+
+async def test_listening_sessions_paging_stops_after_the_last_page() -> None:
+    """The generator has to end on its own, abs keeps answering past the last page."""
+    session = RecordingSession(body=_session_pages(total=5, items_per_page=2))
+    client = make_client(MeClient, session, access_token="access1", pagination_items_per_page=2)
+
+    async for _ in client.get_my_listening_sessions():
+        pass
+
+    assert [int(call.params["page"]) for call in session.calls] == [0, 1, 2]
+
+
+async def test_listening_sessions_stop_on_a_page_size_of_zero() -> None:
+    """A page size of 0 would never reach the total, so it ends after the first page."""
+    session = RecordingSession(body=_session_pages(total=5, items_per_page=0))
+    client = make_client(MeClient, session, access_token="access1", pagination_items_per_page=0)
+
+    async for _ in client.get_my_listening_sessions():
+        pass
+
+    assert [int(call.params["page"]) for call in session.calls] == [0]
