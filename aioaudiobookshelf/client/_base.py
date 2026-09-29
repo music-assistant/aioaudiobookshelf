@@ -237,7 +237,7 @@ class BaseClient:
         try:
             if self.session_config.refresh_token is not None:
                 # v2.26 and above
-                await self.session_config.session.post(
+                response = await self.session_config.session.post(
                     self.session_config.url_for("logout"),
                     ssl=self.session_config.verify_ssl,
                     headers=self.session_config.headers_refresh_logout,
@@ -245,6 +245,7 @@ class BaseClient:
                     raise_for_status=True,
                     timeout=LOGOUT_TIMEOUT,
                 )
+                response.release()
             else:
                 await self._post("logout")
         except (ClientConnectionError, TimeoutError) as err:
