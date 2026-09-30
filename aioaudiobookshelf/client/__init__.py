@@ -87,14 +87,12 @@ class SocketClient:
             ssl_verify=self.session_config.verify_ssl,
         )
 
-        # configuring logging is the caller's business, not a library's
         self.logger = self.session_config.logger or logging.getLogger(__name__)
 
         self.set_item_callbacks()
         self.set_user_callbacks()
         self.set_library_callbacks()
-        self.set_episode_callbacks()
-        self.set_podcast_episode_download_callbacks()
+        self.set_podcast_episode_callbacks()
         self.set_refresh_token_expired_callback()
         self.set_stream_callbacks()
         self.set_playlist_callbacks()
@@ -145,22 +143,16 @@ class SocketClient:
         self.on_library_updated = on_library_updated
         self.on_library_removed = on_library_removed
 
-    def set_episode_callbacks(
-        self,
-        *,
-        on_episode_added: Callable[[PodcastEpisodeAdded], Coroutine[Any, Any, None]] | None = None,
-    ) -> None:
-        """Set podcast episode callbacks."""
-        self.on_episode_added = on_episode_added
-
-    def set_podcast_episode_download_callbacks(
+    def set_podcast_episode_callbacks(
         self,
         *,
         on_episode_download_finished: Callable[[PodcastEpisodeDownload], Coroutine[Any, Any, None]]
         | None = None,
+        on_episode_added: Callable[[PodcastEpisodeAdded], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set podcast episode download callbacks."""
         self.on_episode_download_finished = on_episode_download_finished
+        self.on_episode_added = on_episode_added
 
     def set_refresh_token_expired_callback(
         self, *, on_refresh_token_expired: Callable[[], Coroutine[Any, Any, None]] | None = None
@@ -306,7 +298,6 @@ class SocketClient:
         self._auth_retried = False
 
     async def _on_auth_failed(self, *args: Any) -> None:
-        # abs says why it rejected us, which is the only clue a caller gets
         reason = args[0].get("message") if args and isinstance(args[0], dict) else None
         # socketio runs handlers in their own task, so errors would go unnoticed
         try:
@@ -355,8 +346,6 @@ class SocketClient:
             self.logger.exception("The refresh token expired callback failed.")
 
     async def _on_connect_error(self, *_: Any) -> None:
-        # abs rejects a token with auth_failed, never here, so there is nothing to renew:
-        # the server was not reachable, and socketio keeps reconnecting on its own
         self.logger.debug("Socket could not connect, socketio will retry.")
 
     async def _on_user_updated(self, data: dict[str, Any]) -> None:
