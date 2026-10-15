@@ -109,3 +109,35 @@ async def test_removing_a_playlist_item_names_the_episode(
         )
 
     assert session.urls == [expected]
+
+
+@pytest.mark.parametrize(
+    ("method", "kwargs", "expected_url", "expected_payloads"),
+    [
+        (
+            "create_my_bookmark",
+            {"title": "Arrakis"},
+            "http://abs.local/api/me/item/item1/bookmark",
+            [{"time": 754.5, "title": "Arrakis"}],
+        ),
+        (
+            "update_my_bookmark",
+            {"title": "Arrakis"},
+            "http://abs.local/api/me/item/item1/bookmark",
+            [{"time": 754.5, "title": "Arrakis"}],
+        ),
+        ("remove_my_bookmark", {}, "http://abs.local/api/me/item/item1/bookmark/754.5", []),
+    ],
+)
+async def test_a_bookmark_is_addressed_by_item_and_time(
+    method: str, kwargs: dict[str, str], expected_url: str, expected_payloads: list[dict]
+) -> None:
+    """Abs has no bookmark id, removing one names its time in the path."""
+    session = RecordingSession(
+        b'{"libraryItemId": "item1", "title": "Arrakis", "time": 754.5, "createdAt": 1}'
+    )
+
+    await getattr(make_client(UserClient, session), method)(item_id="item1", time=754.5, **kwargs)
+
+    assert session.urls == [expected_url]
+    assert session.payloads == expected_payloads

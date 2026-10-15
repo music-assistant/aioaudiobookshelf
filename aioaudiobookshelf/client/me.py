@@ -5,6 +5,7 @@ from typing import Any
 
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.exceptions import NotFoundError
+from aioaudiobookshelf.schema.audio import AudioBookmark
 from aioaudiobookshelf.schema.calls_me import (
     ItemsInProgressResponse,
     MeListeningSessionsParameters,
@@ -124,7 +125,24 @@ class MeClient(BaseClient):
         """Remove a single media progress."""
         await self._delete(f"/api/me/progress/{media_progress_id}")
 
-    # create, update, remove bookmark
+    async def create_my_bookmark(self, *, item_id: str, time: float, title: str) -> AudioBookmark:
+        """Create a bookmark, abs renames an existing one at the same time instead."""
+        response = await self._post(
+            f"/api/me/item/{item_id}/bookmark", data={"time": time, "title": title}
+        )
+        return AudioBookmark.from_json(response)
+
+    async def update_my_bookmark(self, *, item_id: str, time: float, title: str) -> AudioBookmark:
+        """Rename the bookmark at time, abs keys a bookmark by item and time."""
+        response = await self._patch(
+            f"/api/me/item/{item_id}/bookmark", data={"time": time, "title": title}
+        )
+        return AudioBookmark.from_json(response)
+
+    async def remove_my_bookmark(self, *, item_id: str, time: float) -> None:
+        """Remove the bookmark at time."""
+        await self._delete(f"/api/me/item/{item_id}/bookmark/{time}")
+
     # change password
     # get lib items in progress
     # remove series from continue listening
