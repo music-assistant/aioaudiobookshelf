@@ -15,6 +15,7 @@ from aioaudiobookshelf.exceptions import (
     ServiceUnavailableError,
     TokenIsMissingError,
 )
+from aioaudiobookshelf.schema.events_socket import PodcastEpisodeDownload
 
 Handler = Callable[..., Coroutine[Any, Any, None]]
 
@@ -329,3 +330,29 @@ async def test_a_caller_can_ask_socketio_to_keep_trying() -> None:
 
     assert isinstance(socket_client.client, FakeSocketIoClient)
     assert socket_client.client.options == {"retry": True, "wait_timeout": 30}
+
+
+def test_an_episode_download_without_title_or_library() -> None:
+    """Abs sends null for both, see its objects/PodcastEpisodeDownload.js."""
+    download = PodcastEpisodeDownload.from_payload(
+        {
+            "id": "download1",
+            "episodeDisplayTitle": None,
+            "url": "https://feed.example/episode1.mp3",
+            "libraryItemId": "item1",
+            "libraryId": None,
+            "isFinished": True,
+            "failed": False,
+            "startedAt": 1700000000000,
+            "createdAt": 1700000000000,
+            "finishedAt": 1700000000000,
+            "podcastTitle": None,
+            "podcastExplicit": False,
+            "season": None,
+            "episode": None,
+            "episodeType": "full",
+            "publishedAt": None,
+        }
+    )
+
+    assert (download.episode_display_title, download.library_id) == (None, None)

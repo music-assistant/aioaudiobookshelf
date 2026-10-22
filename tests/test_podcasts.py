@@ -110,3 +110,13 @@ def test_an_episode_abs_before_2_7_1_could_not_probe_has_a_duration_of_0() -> No
     item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
 
     assert item.media.episodes[0].duration == 0
+
+
+def test_an_episode_abs_before_2_18_got_without_a_title_has_an_empty_one() -> None:
+    """Abs stored null for a feed item without title, newer ones store an empty one."""
+    episode = _episode()
+    episode["title"] = None
+
+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
+
+    assert item.media.episodes[0].title == ""

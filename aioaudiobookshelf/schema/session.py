@@ -44,8 +44,10 @@ class PlaybackSession(_BaseModel):
 
     id_: Annotated[str, Alias("id")]
     user_id: Annotated[str, Alias("userId")]
-    library_id: Annotated[str, Alias("libraryId")]
-    library_item_id: Annotated[str, Alias("libraryItemId")]
+    # null in a stored session abs could not map, e.g. a migrated one,
+    # see its objects/PlaybackSession.js
+    library_id: Annotated[str | None, Alias("libraryId")]
+    library_item_id: Annotated[str | None, Alias("libraryItemId")]
     episode_id: Annotated[str | None, Alias("episodeId")] = None
     media_type: Annotated[str, Alias("mediaType")]
     # BookMetadata first: it needs authors, narrators and series, which a podcast
@@ -58,9 +60,9 @@ class PlaybackSession(_BaseModel):
     duration: float | None
     # 0: direct play, 1: direct stream, 2: transcode, 3: local
     play_method: Annotated[PlaybackMethod, Alias("playMethod")]
-    media_player: Annotated[str, Alias("mediaPlayer")]
+    media_player: Annotated[str | None, Alias("mediaPlayer")]
     device_info: Annotated[DeviceInfo, Alias("deviceInfo")]
-    server_version: Annotated[str, Alias("serverVersion")]
+    server_version: Annotated[str | None, Alias("serverVersion")]
     # YYYY-MM-DD
     date: str
     day_of_week: Annotated[str, Alias("dayOfWeek")]

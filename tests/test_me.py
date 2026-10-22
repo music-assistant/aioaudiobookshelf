@@ -108,13 +108,13 @@ async def test_a_migrated_user_without_newer_permissions() -> None:
     )
 
 
-async def test_a_stored_session_without_listening_time_duration_or_metadata() -> None:
-    """Abs reads a stored 0 back as null, and old or local sessions lack the rest."""
+async def test_a_stored_session_abs_could_not_fully_map() -> None:
+    """Abs reads a stored 0 back as null, and migrated or local sessions lack the rest."""
     stored_session = {
         "id": "session1",
         "userId": "user1",
-        "libraryId": "library1",
-        "libraryItemId": "item1",
+        "libraryId": None,
+        "libraryItemId": None,
         "episodeId": None,
         "mediaType": "book",
         "mediaMetadata": None,
@@ -124,9 +124,9 @@ async def test_a_stored_session_without_listening_time_duration_or_metadata() ->
         "coverPath": None,
         "duration": None,
         "playMethod": 3,
-        "mediaPlayer": "unknown",
+        "mediaPlayer": None,
         "deviceInfo": {},
-        "serverVersion": "2.37.1",
+        "serverVersion": None,
         "date": "2026-10-22",
         "dayOfWeek": "Thursday",
         "timeListening": None,
@@ -141,7 +141,41 @@ async def test_a_stored_session_without_listening_time_duration_or_metadata() ->
     pages = [result async for result in client.get_my_listening_sessions()]
 
     session = pages[0].sessions[0]
-    assert (session.time_listening, session.duration, session.media_metadata) == (None, None, None)
+    assert {
+        session.library_id,
+        session.library_item_id,
+        session.media_player,
+        session.server_version,
+        session.time_listening,
+        session.duration,
+        session.media_metadata,
+    } == {None}
+
+
+async def test_a_media_progress_abs_could_not_map_to_an_item() -> None:
+    """Abs sends extraData.libraryItemId or null, see its models/MediaProgress.js."""
+    progress = {
+        "id": "progress1",
+        "userId": "user1",
+        "libraryItemId": None,
+        "episodeId": None,
+        "mediaItemId": "book1",
+        "mediaItemType": "book",
+        "duration": 100.0,
+        "progress": 0.1,
+        "currentTime": 10.0,
+        "isFinished": False,
+        "hideFromContinueListening": False,
+        "lastUpdate": 1700000000000,
+        "startedAt": 1700000000000,
+        "finishedAt": None,
+    }
+    client = make_client(MeClient, RecordingSession(json.dumps(progress).encode()))
+
+    media_progress = await client.get_my_media_progress(item_id="item1")
+
+    assert media_progress is not None
+    assert media_progress.library_item_id is None
 
 
 async def test_listening_sessions_paging_stops_after_the_last_page() -> None:
