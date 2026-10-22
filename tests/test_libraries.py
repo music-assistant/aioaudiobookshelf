@@ -104,7 +104,11 @@ async def test_every_playlist_and_collection_arrives_once(
         LibrariesClient, session, access_token="access1", pagination_items_per_page=10
     )
 
-    ids = [item.id_ async for page in get_items(client) for item in page.results]
+    ids = []
+    async for page in get_items(client):
+        ids.extend(item.id_ for item in page.results)
+        # a caller may consume the page, the paging must not depend on it
+        page.results.clear()
 
     assert ids == [item["id"] for item in items]
     assert _asked_pages(session) == expected_pages
