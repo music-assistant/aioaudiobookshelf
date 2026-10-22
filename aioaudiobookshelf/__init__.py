@@ -16,7 +16,7 @@ from aioaudiobookshelf.exceptions import (
 from aioaudiobookshelf.helpers import get_login_response, read_login_response
 from aioaudiobookshelf.schema.calls_login import AuthorizeResponse
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 async def _get_authorize_response(*, session_config: SessionConfiguration) -> AuthorizeResponse:
