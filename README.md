@@ -8,7 +8,7 @@ needed for the provider will be added over time.
 
 Not all endpoints are yet implemented.
 
-Requires ABS 2.3.0 or newer, logging in to an older server raises
+Requires ABS 2.6.0 or newer, logging in to an older server raises
 `UnsupportedServerVersionError`.
 
 ## Issues

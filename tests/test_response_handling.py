@@ -194,7 +194,7 @@ async def test_an_unreachable_abs_does_not_look_like_a_wrong_password(
 
 @pytest.mark.parametrize(
     ("version", "expected"),
-    [("2.2.20", UnsupportedServerVersionError), ("2.3.0", SchemaError)],
+    [("2.5.0", UnsupportedServerVersionError), ("2.6.0", SchemaError)],
 )
 @pytest.mark.parametrize("login", [_login_with_password, _login_with_token])
 async def test_an_abs_too_old_to_decode_is_named_as_such(
@@ -202,7 +202,7 @@ async def test_an_abs_too_old_to_decode_is_named_as_such(
     version: str,
     expected: type[Exception],
 ) -> None:
-    """Abs 2.2.20 lacks e.g. metadataFileFormat, which would only read as a schema error."""
+    """Abs 2.5.0 answers a bad token with 404, older ones also lack schema fields."""
     body = f'{{"user": {{}}, "serverSettings": {{"version": "{version}"}}, "Source": "docker"}}'
     session_config = SessionConfiguration(
         session=FakeSession(FakeResponse(body=body.encode())),  # type: ignore[arg-type]

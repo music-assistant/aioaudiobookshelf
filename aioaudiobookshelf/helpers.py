@@ -22,8 +22,8 @@ from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
 if TYPE_CHECKING:
     from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 
-# older abs lacks fields and endpoints the schema relies on
-MIN_ABS_VERSION = (2, 3, 0)
+# older abs lacks fields the schema relies on, and answers a bad token with 404
+MIN_ABS_VERSION = (2, 6, 0)
 
 
 class FilterGroup(StrEnum):
