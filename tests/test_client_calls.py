@@ -10,6 +10,7 @@ from aioaudiobookshelf.client import UserClient
 from aioaudiobookshelf.client.authors import AuthorImageFormat
 from aioaudiobookshelf.exceptions import SchemaError
 from aioaudiobookshelf.schema.calls_authors import AuthorWithItems, AuthorWithItemsAndSeries
+from aioaudiobookshelf.schema.calls_playlists import UpdatePlaylistParameters
 from aioaudiobookshelf.schema.playlist import PlaylistItem
 
 from .helpers import RecordingSession, make_client
@@ -93,6 +94,18 @@ async def test_an_author_image_is_asked_for_with_its_size(
 
     assert image == b"an-image"
     assert session.calls[0].params == {"width": 200, "format": "webp", "height": 100} | expected_raw
+
+
+async def test_a_playlist_update_sends_only_what_is_set() -> None:
+    """Abs before v2.17.7 empties the playlist on items: [] and clears on a null."""
+    session = RecordingSession()
+
+    with pytest.raises(SchemaError, match="Playlist"):
+        await make_client(UserClient, session).update_playlist(
+            playlist_id="playlist1", parameters=UpdatePlaylistParameters(name="Renamed")
+        )
+
+    assert session.payloads == [{"name": "Renamed"}]
 
 
 @pytest.mark.parametrize(
