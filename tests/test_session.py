@@ -14,7 +14,7 @@ from aioaudiobookshelf.exceptions import (
 )
 from aioaudiobookshelf.schema.calls_session import SyncOpenSessionParameters
 
-from .helpers import make_client
+from .helpers import RecordingSession, make_client
 
 
 def _client(*statuses: int) -> SessionClient:
@@ -73,3 +73,15 @@ async def test_failing_close_is_not_a_missing_session() -> None:
         await _client(500).close_open_session(session_id="session1")
 
     assert not isinstance(excinfo.value, SessionNotFoundError)
+
+
+async def test_local_sessions_abs_could_not_sync_are_named() -> None:
+    """Abs answers 200 and reports a failure per session, see its PlaybackSessionManager.js."""
+    body = (
+        b'{"results": [{"id": "session1", "success": true, "progressSynced": true},'
+        b' {"id": "session2", "success": false, "error": "Media item not found"}]}'
+    )
+    client = make_client(SessionClient, RecordingSession(body))
+
+    with pytest.raises(SessionSyncError, match=r"session2 \(Media item not found\)"):
+        await client.sync_local_sessions(playback_sessions=[])
