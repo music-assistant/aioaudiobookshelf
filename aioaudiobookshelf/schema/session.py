@@ -9,7 +9,7 @@ from mashumaro.types import Alias
 from . import _BaseModel
 from .audio import AudioTrack
 from .book import BookChapter, BookMetadata
-from .podcast import PodcastMetadata
+from .podcast import PodcastEpisodeChapter, PodcastMetadata
 
 
 @dataclass(kw_only=True)
@@ -72,7 +72,8 @@ class PlaybackSession(_BaseModel):
     current_time: Annotated[float, Alias("currentTime")]  # s
     started_at: Annotated[int, Alias("startedAt")]  # ms since Unix Epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms since Unix Epoch
-    chapters: list[BookChapter] = field(default_factory=list)
+    # an episode's chapters as stored, see PodcastEpisodeChapter
+    chapters: list[BookChapter | PodcastEpisodeChapter] = field(default_factory=list)
 
 
 @dataclass(kw_only=True)
