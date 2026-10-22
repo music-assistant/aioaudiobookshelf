@@ -4,6 +4,8 @@ import json
 from math import ceil
 from typing import Any
 
+import pytest
+
 from aioaudiobookshelf.client.me import MeClient
 
 from .helpers import RecordingSession, make_client
@@ -133,6 +135,8 @@ async def test_a_user_kept_away_from_tagged_items() -> None:
 
     assert user.item_tags_selected == ["horror"]
     assert user.permissions.selected_tags_not_accessible
+    with pytest.warns(DeprecationWarning):
+        assert user.item_tags_accessible == ["horror"]
 
 
 async def test_a_stored_session_abs_could_not_fully_map() -> None:

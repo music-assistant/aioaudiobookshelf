@@ -1,5 +1,6 @@
 """User schema."""
 
+import warnings
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Annotated
@@ -82,6 +83,16 @@ class User(_UserBase):
     item_tags_selected: Annotated[list[str], Alias("itemTagsSelected")] = field(
         default_factory=list
     )
+
+    @property
+    def item_tags_accessible(self) -> list[str]:
+        """Deprecated, use item_tags_selected. Abs renamed the key in 2.2.20."""
+        warnings.warn(
+            "item_tags_accessible is deprecated, use item_tags_selected",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.item_tags_selected
 
 
 # not yet added:
