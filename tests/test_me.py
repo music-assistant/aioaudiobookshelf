@@ -76,8 +76,8 @@ def _session_pages(total: int, items_per_page: int) -> Any:
     return body
 
 
-async def test_a_migrated_user_without_newer_permissions() -> None:
-    """Abs copied v1 permissions as stored, and reads a missing one as false."""
+def _user(permissions: dict[str, bool], item_tags_selected: list[str]) -> bytes:
+    """Build a user as abs sends it to the user itself."""
     user = {
         "id": "user1",
         "username": "listener",
@@ -90,11 +90,17 @@ async def test_a_migrated_user_without_newer_permissions() -> None:
         "isLocked": False,
         "lastSeen": None,
         "createdAt": 1600000000000,
-        "permissions": {"download": True, "update": True, "delete": False},
+        "permissions": permissions,
         "librariesAccessible": [],
-        "itemTagsSelected": [],
+        "itemTagsSelected": item_tags_selected,
     }
-    client = make_client(MeClient, RecordingSession(json.dumps(user).encode()))
+    return json.dumps(user).encode()
+
+
+async def test_a_migrated_user_without_newer_permissions() -> None:
+    """Abs copied v1 permissions as stored, and reads a missing one as false."""
+    body = _user({"download": True, "update": True, "delete": False}, [])
+    client = make_client(MeClient, RecordingSession(body))
 
     permissions = (await client.get_my_user()).permissions
 
@@ -104,8 +110,29 @@ async def test_a_migrated_user_without_newer_permissions() -> None:
             permissions.access_all_libraries,
             permissions.access_all_tags,
             permissions.access_explicit_content,
+            permissions.selected_tags_not_accessible,
         )
     )
+
+
+async def test_a_user_kept_away_from_tagged_items() -> None:
+    """Abs sends the tags as itemTagsSelected, and the permission says how they apply."""
+    permissions = {
+        "download": True,
+        "update": True,
+        "delete": False,
+        "upload": False,
+        "accessAllLibraries": True,
+        "accessAllTags": False,
+        "accessExplicitContent": True,
+        "selectedTagsNotAccessible": True,
+    }
+    client = make_client(MeClient, RecordingSession(_user(permissions, ["horror"])))
+
+    user = await client.get_my_user()
+
+    assert user.item_tags_selected == ["horror"]
+    assert user.permissions.selected_tags_not_accessible
 
 
 async def test_a_stored_session_abs_could_not_fully_map() -> None:

@@ -27,6 +27,7 @@ class UserPermissions(_BaseModel):
     access_all_libraries: Annotated[bool, Alias("accessAllLibraries")] = False
     access_all_tags: Annotated[bool, Alias("accessAllTags")] = False
     access_explicit_content: Annotated[bool, Alias("accessExplicitContent")] = False
+    selected_tags_not_accessible: Annotated[bool, Alias("selectedTagsNotAccessible")] = False
 
 
 class UserType(StrEnum):
@@ -77,9 +78,8 @@ class User(_UserBase):
         default_factory=list
     )
 
-    # is apparently omitted if empty
-    # empty = all accessible
-    item_tags_accessible: Annotated[list[str], Alias("itemTagsAccessible")] = field(
+    # only applies without access_all_tags, selected_tags_not_accessible inverts it
+    item_tags_selected: Annotated[list[str], Alias("itemTagsSelected")] = field(
         default_factory=list
     )
 
