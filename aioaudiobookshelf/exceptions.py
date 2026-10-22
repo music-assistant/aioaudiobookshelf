@@ -29,12 +29,24 @@ class RefreshTokenExpiredError(AbsAuthError):
     """Exception raised if refresh token expired."""
 
 
+class TokenNotRenewableError(AbsAuthError):
+    """Raised if abs rejected the token and there is nothing to renew it with.
+
+    An api key or a pre v2.26 token cannot be refreshed. Abs deactivates an
+    expired api key, see its auth/TokenManager.js.
+    """
+
+
 class AbsApiError(AbsError):
     """Base exception for API call errors."""
 
 
 class ApiError(AbsApiError):
     """Exception raised if call to api failed."""
+
+
+class SchemaError(ApiError):
+    """Raised when abs' answer does not match the schema."""
 
 
 class ServiceUnavailableError(AbsApiError):
@@ -51,3 +63,7 @@ class SessionNotFoundError(NotFoundError):
 
 class SessionSyncError(AbsError):
     """Error while syncing (a) session(s)."""
+
+
+class SessionSyncNotFoundError(SessionSyncError, SessionNotFoundError):
+    """Raised if the session to sync is gone, e.g. after an abs restart."""

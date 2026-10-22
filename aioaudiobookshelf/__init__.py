@@ -1,25 +1,35 @@
 """Client library for Audiobookshelf."""
 
-from aiohttp.client_exceptions import ClientResponseError, InvalidUrlClientError
+from aiohttp.client_exceptions import (
+    ClientConnectionError,
+    ClientResponseError,
+    InvalidUrlClientError,
+)
 
 from aioaudiobookshelf.client import AdminClient, SocketClient, UserClient
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import LoginError, TokenIsMissingError
+from aioaudiobookshelf.exceptions import (
+    LoginError,
+    ServiceUnavailableError,
+    TokenIsMissingError,
+)
 from aioaudiobookshelf.helpers import get_login_response
 from aioaudiobookshelf.schema.calls_login import AuthorizeResponse
 
-__version__ = "0.1.25"
+__version__ = "0.2.0"
 
 
 async def _get_authorize_response(*, session_config: SessionConfiguration) -> AuthorizeResponse:
     """Login via token."""
     try:
         resp = await session_config.session.post(
-            f"{session_config.url}/api/authorize",
+            session_config.url_for("api/authorize"),
             ssl=session_config.verify_ssl,
             raise_for_status=True,
             headers=session_config.headers,
         )
+    except (ClientConnectionError, TimeoutError) as exc:
+        raise ServiceUnavailableError from exc
     except (ClientResponseError, InvalidUrlClientError, TokenIsMissingError) as exc:
         raise LoginError from exc
     return AuthorizeResponse.from_json(await resp.read())

@@ -11,10 +11,7 @@ class SeriesClient(BaseClient):
     async def get_series(
         self, *, series_id: str, include_progress: bool = False
     ) -> Series | SeriesWithProgress:
-        """Get an author.
-
-        Include series always includes items.
-        """
+        """Get a series, optionally with this user's progress."""
         response_cls: type[Series | SeriesWithProgress] = Series
         endpoint = f"/api/series/{series_id}"
         if include_progress:

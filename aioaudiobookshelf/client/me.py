@@ -1,14 +1,17 @@
 """Calls to /api/me."""
 
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from aioaudiobookshelf.client._base import BaseClient
 from aioaudiobookshelf.exceptions import NotFoundError
 from aioaudiobookshelf.schema.calls_me import (
+    ItemsInProgressResponse,
     MeListeningSessionsParameters,
     MeListeningSessionsResponse,
 )
 from aioaudiobookshelf.schema.media_progress import MediaProgress
+from aioaudiobookshelf.schema.shelf import ShelfLibraryItemMinified
 from aioaudiobookshelf.schema.user import User
 
 
@@ -22,7 +25,6 @@ class MeClient(BaseClient):
 
     async def get_my_listening_sessions(self) -> AsyncGenerator[MeListeningSessionsResponse]:
         """Get this user's listening sessions."""
-        raise NotImplementedError("PodcastMetadata not fully returned.")
         page_cnt = 0
         params = MeListeningSessionsParameters(
             items_per_page=self.session_config.pagination_items_per_page, page=page_cnt
@@ -31,7 +33,19 @@ class MeClient(BaseClient):
             params.page = page_cnt
             response = await self._get("/api/me/listening-sessions", params.to_dict())
             page_cnt += 1
-            yield MeListeningSessionsResponse.from_json(response)
+            page = MeListeningSessionsResponse.from_json(response)
+            yield page
+            # guard a page size of 0, which would never reach the total
+            if page.items_per_page <= 0 or page_cnt * page.items_per_page >= page.total:
+                return
+
+    async def get_my_items_in_progress(self, *, limit: int = 25) -> list[ShelfLibraryItemMinified]:
+        """Get this user's unfinished items, the most recently listened to first.
+
+        Abs counts an item as in progress once it has a position, see its MeController.js.
+        """
+        response = await self._get("/api/me/items-in-progress", params={"limit": limit})
+        return ItemsInProgressResponse.from_json(response).library_items
 
     # listening stats
     # remove item from continue listening
@@ -59,17 +73,18 @@ class MeClient(BaseClient):
         duration_seconds: float,
         progress_seconds: float,
         is_finished: bool,
+        mark_as_finished_time_remaining: int | None = None,
+        mark_as_finished_percent_complete: int | None = None,
     ) -> None:
         """Update progress of media item.
 
-        0 <= progress_percent <= 1
+        The mark_as_finished_* are a library's settings. Abs only applies them to
+        /api/me/progress if the caller sends them, unlike a session sync, where it
+        adds them itself. Without them abs falls back to 10s remaining.
 
-        Notes:
-            - progress in abs is percentage
-            - multiple parameters in one call don't work in all combinations
-            - currentTime is current position in s
-            - currentTime works only if duration is sent as well, but then don't
-              send progress at the same time.
+        Three calls, because abs cannot take this in one (models/MediaProgress.js):
+            - with isFinished in the payload, progress in the same payload is ignored
+            - unsetting isFinished drops currentTime from the payload and zeroes it
         """
         logger_item = "audiobook" if not episode_id else "podcast"
         endpoint = f"/api/me/progress/{item_id}"
@@ -82,15 +97,25 @@ class MeClient(BaseClient):
         if is_finished:
             self.logger.debug("Marked %s, id %s finished.", logger_item, item_id)
             return
+        if duration_seconds <= 0:
+            # abs has no duration for e.g. a podcast episode it did not probe, so there is
+            # no percentage to send, and a duration of 0 would overwrite what abs knows
+            await self._patch(endpoint, data={"currentTime": progress_seconds})
+            self.logger.debug(
+                "Updated position of %s, id %s, its duration is unknown.", logger_item, item_id
+            )
+            return
         percentage = progress_seconds / duration_seconds
         await self._patch(
             endpoint,
             data={"progress": percentage},
         )
-        await self._patch(
-            endpoint,
-            data={"duration": duration_seconds, "currentTime": progress_seconds},
-        )
+        data: dict[str, Any] = {"duration": duration_seconds, "currentTime": progress_seconds}
+        if mark_as_finished_time_remaining is not None:
+            data["markAsFinishedTimeRemaining"] = mark_as_finished_time_remaining
+        if mark_as_finished_percent_complete is not None:
+            data["markAsFinishedPercentComplete"] = mark_as_finished_percent_complete
+        await self._patch(endpoint, data=data)
         self.logger.debug(
             "Updated progress of %s, id %s to %.2f%%.", logger_item, item_id, percentage * 100
         )

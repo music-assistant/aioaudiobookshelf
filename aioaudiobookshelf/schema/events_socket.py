@@ -6,7 +6,9 @@ from typing import Annotated
 from mashumaro.types import Alias
 
 from . import _BaseModel
+from .library import LibraryItemExpandedPodcast
 from .media_progress import MediaProgress
+from .podcast import PodcastEpisodeExpanded
 
 
 @dataclass(kw_only=True)
@@ -68,3 +70,13 @@ class StreamError(_BaseModel):
 
     id_: Annotated[str, Alias("id")]
     error: str
+
+
+@dataclass(kw_only=True)
+class PodcastEpisodeAdded(PodcastEpisodeExpanded):
+    """The episode abs added, with the podcast it belongs to.
+
+    Abs attaches the expanded library item, see its managers/PodcastManager.js.
+    """
+
+    library_item: Annotated[LibraryItemExpandedPodcast, Alias("libraryItem")]

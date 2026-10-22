@@ -6,6 +6,7 @@ from aioaudiobookshelf.exceptions import (
     NotFoundError,
     SessionNotFoundError,
     SessionSyncError,
+    SessionSyncNotFoundError,
 )
 from aioaudiobookshelf.schema.calls_session import (
     CloseOpenSessionsParameters,
@@ -62,7 +63,10 @@ class SessionClient(BaseClient):
         """Sync an open session."""
         try:
             await self._post(f"/api/session/{session_id}/sync", data=parameters.to_dict())
-        except (ApiError, NotFoundError) as err:
+        except NotFoundError as err:
+            # abs drops its sessions on a restart, and after 36h
+            raise SessionSyncNotFoundError from err
+        except ApiError as err:
             raise SessionSyncError from err
 
     async def close_open_session(
@@ -73,5 +77,5 @@ class SessionClient(BaseClient):
         self.logger.debug("Closing playback session %s.", session_id)
         try:
             await self._post(f"/api/session/{session_id}/close", data=_parameters)
-        except ApiError as err:
+        except NotFoundError as err:
             raise SessionNotFoundError from err

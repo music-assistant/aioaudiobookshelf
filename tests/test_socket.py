@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+import socketio.exceptions
 
 from aioaudiobookshelf.client import SocketClient
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
@@ -19,6 +20,7 @@ Handler = Callable[..., Coroutine[Any, Any, None]]
 
 # what the handlers log for an error they did not expect
 GUARD_LOG = "Could not handle a rejected socket authentication."
+CALLBACK_LOG = "The refresh token expired callback failed."
 
 
 class FakeSocketIoClient:
@@ -30,16 +32,18 @@ class FakeSocketIoClient:
         self.emitted: list[tuple[str, Any]] = []
         self.url: str | None = None
         self.socketio_path: str | None = None
+        self.options: dict[str, Any] = {}
         self.disconnects = 0
 
     def on(self, event: str, handler: Handler) -> None:
         """Register an event handler."""
         self.handlers[event] = handler
 
-    async def connect(self, url: str, socketio_path: str) -> None:
+    async def connect(self, url: str, socketio_path: str, **options: Any) -> None:
         """Connect and raise the connect event, as socketio does."""
         self.url = url
         self.socketio_path = socketio_path
+        self.options = options
         await self.trigger("connect")
 
     async def disconnect(self) -> None:
@@ -78,6 +82,7 @@ async def _socket(
     session_config: SessionConfiguration,
     *,
     on_refresh_token_expired: Callable[[], Any] | None = None,
+    **user_callbacks: Any,
 ) -> FakeSocketIoClient:
     """Connect a socket client which talks to the fake instead of socketio."""
     with patch("socketio.AsyncClient", FakeSocketIoClient):
@@ -85,6 +90,8 @@ async def _socket(
     socket_client.set_refresh_token_expired_callback(
         on_refresh_token_expired=on_refresh_token_expired
     )
+    if user_callbacks:
+        socket_client.set_user_callbacks(**user_callbacks)
     await socket_client.init_client()
     assert isinstance(socket_client.client, FakeSocketIoClient)
     return socket_client.client
@@ -184,8 +191,8 @@ async def test_known_refresh_failure_handled_quietly(
     assert GUARD_LOG not in caplog.text
 
 
-async def test_unexpected_error_is_logged(caplog: pytest.LogCaptureFixture) -> None:
-    """An error socketio would drop silently is logged instead."""
+async def test_a_failing_callback_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """The callback belongs to the caller, and socketio would drop what it raises."""
 
     async def on_refresh_token_expired() -> None:
         raise ValueError("relogin failed")
@@ -202,32 +209,43 @@ async def test_unexpected_error_is_logged(caplog: pytest.LogCaptureFixture) -> N
     with caplog.at_level(logging.ERROR):
         await socket_io.auth_failed()
 
-    assert GUARD_LOG in caplog.text
+    assert CALLBACK_LOG in caplog.text
 
 
-async def test_connect_error_survives_a_failing_refresh(caplog: pytest.LogCaptureFixture) -> None:
-    """The connect error handler swallows nothing either, so socketio keeps reconnecting."""
-    socket_io = await _socket(
-        _session_config(
-            AsyncMock(side_effect=ValueError("broken response")),
-            access_token="access1",
-            refresh_token="refresh1",
-        )
+async def test_a_socketio_error_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """Socketio runs the handler in its own task and drops whatever it raises."""
+    socket_io = await _socket(_session_config(token="api_key"))
+    socket_io.disconnect = AsyncMock(  # type: ignore[method-assign]
+        side_effect=socketio.exceptions.BadNamespaceError
     )
 
     with caplog.at_level(logging.ERROR):
-        await socket_io.trigger("connect_error", {"message": "unauthorized"})
+        await socket_io.auth_failed()
 
-    assert "Could not handle a socket connection error." in caplog.text
+    assert GUARD_LOG in caplog.text
 
 
-async def test_api_key_auth_failed_disconnects() -> None:
-    """A rejected api key disconnects the socket, as abs does not support it."""
+async def test_connect_error_does_not_spend_a_refresh() -> None:
+    """A socket which cannot reach abs has not had its token rejected."""
+    refresh = AsyncMock()
+    socket_io = await _socket(
+        _session_config(refresh, access_token="access1", refresh_token="refresh1")
+    )
+
+    await socket_io.trigger("connect_error", {"message": "unauthorized"})
+
+    refresh.assert_not_awaited()
+
+
+async def test_api_key_auth_failed_disconnects(caplog: pytest.LogCaptureFixture) -> None:
+    """An api key abs rejected cannot be refreshed, so the socket goes down and says why."""
     socket_io = await _socket(_session_config(token="api_key"))
 
-    await socket_io.auth_failed()
+    with caplog.at_level(logging.WARNING):
+        await socket_io.trigger("auth_failed", {"message": "API key expired"})
 
     assert socket_io.disconnects == 1
+    assert "Abs said: API key expired." in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -244,3 +262,70 @@ async def test_socket_path_follows_the_url(url: str, expected: str) -> None:
     socket_io = await _socket(_session_config(url=url, access_token="access1"))
 
     assert socket_io.socketio_path == expected
+
+
+async def test_user_session_closed_reaches_the_callback() -> None:
+    """Abs sends the id of the session it closed, see its PlaybackSessionManager.js."""
+    closed: list[str] = []
+
+    async def on_user_session_closed(session_id: str) -> None:
+        closed.append(session_id)
+
+    socket_io = await _socket(
+        _session_config(access_token="access1"),
+        on_user_session_closed=on_user_session_closed,
+    )
+
+    await socket_io.trigger("user_session_closed", "session1")
+
+    assert closed == ["session1"]
+
+
+async def test_a_connect_without_a_token_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """Socketio drops what a handler raises, so the connect handler has to log it itself."""
+    with caplog.at_level(logging.ERROR):
+        await _socket(_session_config())
+
+    assert "Could not authenticate the socket connection." in caplog.text
+
+
+async def test_an_unreadable_event_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """A schema gap in a live event must not stop the updates silently."""
+    socket_io = await _socket(_session_config(access_token="access1"), on_user_updated=AsyncMock())
+
+    with caplog.at_level(logging.ERROR):
+        await socket_io.trigger("user_updated", {})
+
+    assert "Could not handle the socket event user_updated." in caplog.text
+
+
+async def test_the_library_and_episode_events_are_subscribed() -> None:
+    """Abs sends these, see its LibraryController.js and PodcastManager.js."""
+    socket_io = await _socket(_session_config(access_token="access1"))
+
+    assert {
+        "episode_added",
+        "library_added",
+        "library_updated",
+        "library_removed",
+    } <= socket_io.handlers.keys()
+
+
+async def test_an_accepted_api_key_is_left_alone() -> None:
+    """Abs accepts api keys on the socket after v2.36.1, so nothing is rejected."""
+    socket_io = await _socket(_session_config(token="api_key"))
+
+    await socket_io.trigger("init", {})
+
+    assert socket_io.auth_tokens == ["api_key"]
+    assert socket_io.disconnects == 0
+
+
+async def test_a_caller_can_ask_socketio_to_keep_trying() -> None:
+    """A server which is briefly unreachable must not have to fail the setup."""
+    with patch("socketio.AsyncClient", FakeSocketIoClient):
+        socket_client = SocketClient(session_config=_session_config(access_token="access1"))
+    await socket_client.init_client(retry=True, wait_timeout=30)
+
+    assert isinstance(socket_client.client, FakeSocketIoClient)
+    assert socket_client.client.options == {"retry": True, "wait_timeout": 30}

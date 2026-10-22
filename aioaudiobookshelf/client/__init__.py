@@ -1,7 +1,7 @@
 """Clients for Audiobookshelf."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from typing import Any
 from urllib.parse import urlparse
 
@@ -19,12 +19,13 @@ from aioaudiobookshelf.schema.author import Author, AuthorExpanded
 from aioaudiobookshelf.schema.events_socket import (
     AuthorRemoved,
     LibraryItemRemoved,
+    PodcastEpisodeAdded,
     PodcastEpisodeDownload,
     StreamError,
     StreamReset,
     UserItemProgressUpdatedEvent,
 )
-from aioaudiobookshelf.schema.library import LibraryItemExpanded
+from aioaudiobookshelf.schema.library import Library, LibraryItemExpanded
 from aioaudiobookshelf.schema.media_progress import MediaProgress
 from aioaudiobookshelf.schema.playlist import PlaylistExpanded
 from aioaudiobookshelf.schema.streams import Stream, StreamProgress
@@ -39,6 +40,8 @@ from .playlists import PlaylistsClient
 from .podcasts import PodcastsClient
 from .series import SeriesClient
 from .session import SessionClient
+
+EventHandler = Callable[..., Coroutine[Any, Any, None]]
 
 
 class UserClient(
@@ -84,16 +87,12 @@ class SocketClient:
             ssl_verify=self.session_config.verify_ssl,
         )
 
-        if self.session_config.logger is None:
-            self.logger = logging.getLogger(__name__)
-            logging.basicConfig()
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger = self.session_config.logger
+        self.logger = self.session_config.logger or logging.getLogger(__name__)
 
         self.set_item_callbacks()
         self.set_user_callbacks()
-        self.set_podcast_episode_download_callbacks()
+        self.set_library_callbacks()
+        self.set_podcast_episode_callbacks()
         self.set_refresh_token_expired_callback()
         self.set_stream_callbacks()
         self.set_playlist_callbacks()
@@ -104,11 +103,13 @@ class SocketClient:
     def set_item_callbacks(
         self,
         *,
-        on_item_added: Callable[[LibraryItemExpanded], Any] | None = None,
-        on_item_updated: Callable[[LibraryItemExpanded], Any] | None = None,
-        on_item_removed: Callable[[LibraryItemRemoved], Any] | None = None,
-        on_items_added: Callable[[list[LibraryItemExpanded]], Any] | None = None,
-        on_items_updated: Callable[[list[LibraryItemExpanded]], Any] | None = None,
+        on_item_added: Callable[[LibraryItemExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_item_updated: Callable[[LibraryItemExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_item_removed: Callable[[LibraryItemRemoved], Coroutine[Any, Any, None]] | None = None,
+        on_items_added: Callable[[list[LibraryItemExpanded]], Coroutine[Any, Any, None]]
+        | None = None,
+        on_items_updated: Callable[[list[LibraryItemExpanded]], Coroutine[Any, Any, None]]
+        | None = None,
     ) -> None:
         """Set item callbacks."""
         self.on_item_added = on_item_added
@@ -120,21 +121,41 @@ class SocketClient:
     def set_user_callbacks(
         self,
         *,
-        on_user_updated: Callable[[User], Any] | None = None,
-        on_user_item_progress_updated: Callable[[str, MediaProgress], Any] | None = None,
+        on_user_updated: Callable[[User], Coroutine[Any, Any, None]] | None = None,
+        on_user_item_progress_updated: Callable[[str, MediaProgress], Coroutine[Any, Any, None]]
+        | None = None,
+        on_user_session_closed: Callable[[str], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
-        """Set user callbacks."""
+        """Set user callbacks. on_user_session_closed receives the session's id."""
         self.on_user_updated = on_user_updated
         self.on_user_item_progress_updated = on_user_item_progress_updated
+        self.on_user_session_closed = on_user_session_closed
 
-    def set_podcast_episode_download_callbacks(
-        self, *, on_episode_download_finished: Callable[[PodcastEpisodeDownload], Any] | None = None
+    def set_library_callbacks(
+        self,
+        *,
+        on_library_added: Callable[[Library], Coroutine[Any, Any, None]] | None = None,
+        on_library_updated: Callable[[Library], Coroutine[Any, Any, None]] | None = None,
+        on_library_removed: Callable[[Library], Coroutine[Any, Any, None]] | None = None,
+    ) -> None:
+        """Set library callbacks. Abs only sends these to users who may see the library."""
+        self.on_library_added = on_library_added
+        self.on_library_updated = on_library_updated
+        self.on_library_removed = on_library_removed
+
+    def set_podcast_episode_callbacks(
+        self,
+        *,
+        on_episode_download_finished: Callable[[PodcastEpisodeDownload], Coroutine[Any, Any, None]]
+        | None = None,
+        on_episode_added: Callable[[PodcastEpisodeAdded], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set podcast episode download callbacks."""
         self.on_episode_download_finished = on_episode_download_finished
+        self.on_episode_added = on_episode_added
 
     def set_refresh_token_expired_callback(
-        self, *, on_refresh_token_expired: Callable[[], Any] | None = None
+        self, *, on_refresh_token_expired: Callable[[], Coroutine[Any, Any, None]] | None = None
     ) -> None:
         """Set refresh token expired callback."""
         self.on_refresh_token_expired = on_refresh_token_expired
@@ -142,12 +163,12 @@ class SocketClient:
     def set_stream_callbacks(
         self,
         *,
-        on_stream_open: Callable[[Stream], Any] | None = None,
-        on_stream_closed: Callable[[str], Any] | None = None,
-        on_stream_progress: Callable[[StreamProgress], Any] | None = None,
-        on_stream_ready: Callable[[], Any] | None = None,
-        on_stream_reset: Callable[[StreamReset], Any] | None = None,
-        on_stream_error: Callable[[StreamError], Any] | None = None,
+        on_stream_open: Callable[[Stream], Coroutine[Any, Any, None]] | None = None,
+        on_stream_closed: Callable[[str], Coroutine[Any, Any, None]] | None = None,
+        on_stream_progress: Callable[[StreamProgress], Coroutine[Any, Any, None]] | None = None,
+        on_stream_ready: Callable[[], Coroutine[Any, Any, None]] | None = None,
+        on_stream_reset: Callable[[StreamReset], Coroutine[Any, Any, None]] | None = None,
+        on_stream_error: Callable[[StreamError], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set stream callback."""
         self.on_stream_open = on_stream_open
@@ -160,9 +181,9 @@ class SocketClient:
     def set_playlist_callbacks(
         self,
         *,
-        on_playlist_added: Callable[[PlaylistExpanded], Any] | None = None,
-        on_playlist_updated: Callable[[PlaylistExpanded], Any] | None = None,
-        on_playlist_removed: Callable[[PlaylistExpanded], Any] | None = None,
+        on_playlist_added: Callable[[PlaylistExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_playlist_updated: Callable[[PlaylistExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_playlist_removed: Callable[[PlaylistExpanded], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set playlist callbacks."""
         self.on_playlist_added = on_playlist_added
@@ -172,57 +193,79 @@ class SocketClient:
     def set_author_callbacks(
         self,
         *,
-        on_author_added: Callable[[Author], Any] | None = None,
-        on_author_updated: Callable[[AuthorExpanded], Any] | None = None,
-        on_author_removed: Callable[[AuthorRemoved], Any] | None = None,
-        on_authors_added: Callable[[list[Author]], Any] | None = None,
+        on_author_added: Callable[[Author], Coroutine[Any, Any, None]] | None = None,
+        on_author_updated: Callable[[AuthorExpanded], Coroutine[Any, Any, None]] | None = None,
+        on_author_removed: Callable[[AuthorRemoved], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Set author callbacks."""
         self.on_author_added = on_author_added
         self.on_author_updated = on_author_updated
         self.on_author_removed = on_author_removed
-        self.on_authors_added = on_authors_added
 
-    async def init_client(self) -> None:
-        """Initialize the client."""
+    async def init_client(self, *, retry: bool = False, wait_timeout: float = 1) -> None:
+        """Initialize the client. The defaults are socketio's own.
+
+        retry=True keeps trying, but reconnection_attempts is 0, so the call
+        then returns only once abs answers.
+        """
         self.client.on("connect", handler=self._on_connect)
         self.client.on("connect_error", handler=self._on_connect_error)
         self.client.on("auth_failed", handler=self._on_auth_failed)
         self.client.on("init", handler=self._on_init)
 
-        self.client.on("user_updated", handler=self._on_user_updated)
-        self.client.on("user_item_progress_updated", handler=self._on_user_item_progress_updated)
+        self._on_event("user_updated", self._on_user_updated)
+        self._on_event("user_item_progress_updated", self._on_user_item_progress_updated)
+        self._on_event("user_session_closed", self._on_user_session_closed)
 
-        self.client.on("item_added", handler=self._on_item_added)
-        self.client.on("item_updated", handler=self._on_item_updated)
-        self.client.on("item_removed", handler=self._on_item_removed)
-        self.client.on("items_added", handler=self._on_items_added)
-        self.client.on("items_updated", handler=self._on_items_updated)
+        self._on_event("item_added", self._on_item_added)
+        self._on_event("item_updated", self._on_item_updated)
+        self._on_event("item_removed", self._on_item_removed)
+        self._on_event("items_added", self._on_items_added)
+        self._on_event("items_updated", self._on_items_updated)
 
-        self.client.on("episode_download_finished", handler=self._on_episode_download_finished)
+        self._on_event("episode_added", self._on_episode_added)
+        self._on_event("episode_download_finished", self._on_episode_download_finished)
 
-        self.client.on("stream_open", handler=self._on_stream_open)
-        self.client.on("stream_closed", handler=self._on_stream_closed)
-        self.client.on("stream_progress", handler=self._on_stream_progress)
-        self.client.on("stream_ready", handler=self._on_stream_ready)
-        self.client.on("stream_reset", handler=self._on_stream_reset)
-        self.client.on("stream_error", handler=self._on_stream_error)
+        self._on_event("library_added", self._on_library_added)
+        self._on_event("library_updated", self._on_library_updated)
+        self._on_event("library_removed", self._on_library_removed)
 
-        self.client.on("playlist_added", handler=self._on_playlist_added)
-        self.client.on("playlist_updated", handler=self._on_playlist_updated)
-        self.client.on("playlist_removed", handler=self._on_playlist_removed)
+        self._on_event("stream_open", self._on_stream_open)
+        self._on_event("stream_closed", self._on_stream_closed)
+        self._on_event("stream_progress", self._on_stream_progress)
+        self._on_event("stream_ready", self._on_stream_ready)
+        self._on_event("stream_reset", self._on_stream_reset)
+        self._on_event("stream_error", self._on_stream_error)
 
-        self.client.on("author_added", handler=self._on_author_added)
-        self.client.on("author_updated", handler=self._on_author_updated)
-        self.client.on("author_removed", handler=self._on_author_removed)
-        self.client.on("authors_added", handler=self._on_authors_added)
+        self._on_event("playlist_added", self._on_playlist_added)
+        self._on_event("playlist_updated", self._on_playlist_updated)
+        self._on_event("playlist_removed", self._on_playlist_removed)
+
+        self._on_event("author_added", self._on_author_added)
+        self._on_event("author_updated", self._on_author_updated)
+        self._on_event("author_removed", self._on_author_removed)
 
         # engineio builds its url from the host alone, so a base path has to be
         # passed separately. abs serves a socket for it, see its SocketAuthority.js
         base_path = urlparse(self.session_config.url).path
         await self.client.connect(
-            url=self.session_config.url, socketio_path=f"{base_path}/socket.io"
+            url=self.session_config.url,
+            socketio_path=f"{base_path}/socket.io",
+            retry=retry,
+            wait_timeout=wait_timeout,
         )
+
+    def _on_event(self, event: str, handler: EventHandler) -> None:
+        """Register a data handler, with the guard socketio does not give it."""
+
+        async def guarded(*args: Any) -> None:
+            try:
+                await handler(*args)
+            except AbsError:
+                # socketio runs handlers in their own task and drops what they raise
+                self.logger.exception("Could not handle the socket event %s.", event)
+
+        self.client.on(event, handler=guarded)
 
     async def shutdown(self) -> None:
         """Shutdown client (disconnect, or stop reconnect attempt)."""
@@ -232,7 +275,12 @@ class SocketClient:
 
     async def _on_connect(self) -> None:
         self._auth_retried = False
-        await self._authenticate()
+        try:
+            await self._authenticate()
+        except (AbsError, socketio.exceptions.SocketIOError):
+            # socketio drops what a handler raises, so this would go unnoticed
+            self.logger.exception("Could not authenticate the socket connection.")
+            return
         self.logger.debug("Socket connected.")
 
     async def _authenticate(self) -> None:
@@ -249,96 +297,115 @@ class SocketClient:
         # abs sends init once the socket is authenticated
         self._auth_retried = False
 
-    async def _on_auth_failed(self, *_: Any) -> None:
+    async def _on_auth_failed(self, *args: Any) -> None:
+        reason = args[0].get("message") if args and isinstance(args[0], dict) else None
         # socketio runs handlers in their own task, so errors would go unnoticed
         try:
-            await self._handle_auth_failed()
-        except Exception:
+            await self._handle_auth_failed(reason)
+        except (AbsError, socketio.exceptions.SocketIOError):
             self.logger.exception("Could not handle a rejected socket authentication.")
 
-    async def _handle_auth_failed(self) -> None:
+    async def _handle_auth_failed(self, reason: str | None = None) -> None:
         # abs rejects e.g. an expired access token here, the connection itself stays up
+        said = f" Abs said: {reason}." if reason else ""
         if self.session_config.access_token is None:
-            # a rejected api key or pre v2.26 token cannot be refreshed
+            # An api key or a pre v2.26 token cannot be refreshed, so this is final.
+            # Abs accepts api keys on the socket only after v2.36.1, and deactivates
+            # an expired one when it rejects it, see its SocketAuthority.js.
             self.logger.warning(
-                "Socket authentication failed, live updates are unavailable. "
-                "Audiobookshelf accepts only access tokens for socket connections."
+                "Socket authentication failed, live updates are unavailable. The configured "
+                "token cannot be refreshed: check that the api key is active and not expired, "
+                "and that audiobookshelf is new enough to accept one here.%s",
+                said,
             )
             await self.client.disconnect()
             return
         # not awaiting between test and set keeps concurrent events to one retry
         if self._auth_retried or not self.session_config.auto_refresh:
-            self.logger.warning("Socket authentication failed, live updates are unavailable.")
+            self.logger.warning(
+                "Socket authentication failed, live updates are unavailable.%s", said
+            )
             return
         self._auth_retried = True
         self.logger.debug("Socket authentication failed, refreshing token.")
         try:
             await self.session_config.refresh()
         except RefreshTokenExpiredError:
-            if self.on_refresh_token_expired is None:
-                return
-            await self.on_refresh_token_expired()
+            await self._notify_refresh_token_expired()
         except AbsError:
             return
         await self._authenticate()
 
-    async def _on_connect_error(self, *_: Any) -> None:
-        # socketio runs handlers in their own task, so errors would go unnoticed
+    async def _notify_refresh_token_expired(self) -> None:
+        if self.on_refresh_token_expired is None:
+            return
         try:
-            await self._handle_connect_error()
+            await self.on_refresh_token_expired()
         except Exception:
-            self.logger.exception("Could not handle a socket connection error.")
+            # the callback belongs to the caller, so anything can come out of it
+            self.logger.exception("The refresh token expired callback failed.")
 
-    async def _handle_connect_error(self) -> None:
-        if not self.session_config.auto_refresh or self.session_config.access_token is None:
-            return
-        # try to refresh token
-        self.logger.debug("Auto refreshing token")
-        try:
-            await self.session_config.refresh()
-        except RefreshTokenExpiredError:
-            if self.on_refresh_token_expired is not None:
-                await self.on_refresh_token_expired()
-        except AbsError:
-            # socketio will continue trying to reconnect.
-            return
+    async def _on_connect_error(self, *_: Any) -> None:
+        self.logger.debug("Socket could not connect, socketio will retry.")
 
     async def _on_user_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_updated is not None:
-            await self.on_user_updated(User.from_dict(data))
+            await self.on_user_updated(User.from_payload(data))
 
     async def _on_user_item_progress_updated(self, data: dict[str, Any]) -> None:
         if self.on_user_item_progress_updated is not None:
-            event = UserItemProgressUpdatedEvent.from_dict(data)
+            event = UserItemProgressUpdatedEvent.from_payload(data)
             await self.on_user_item_progress_updated(event.id_, event.data)
+
+    async def _on_user_session_closed(self, session_id: str) -> None:
+        # abs closes a session on a restart, and 36h after its last update,
+        # see its managers/PlaybackSessionManager.js
+        if self.on_user_session_closed is not None:
+            await self.on_user_session_closed(session_id)
 
     async def _on_item_added(self, data: dict[str, Any]) -> None:
         if self.on_item_added is not None:
-            await self.on_item_added(LibraryItemExpanded.from_dict(data))
+            await self.on_item_added(LibraryItemExpanded.from_payload(data))
 
     async def _on_item_updated(self, data: dict[str, Any]) -> None:
         if self.on_item_updated is not None:
-            await self.on_item_updated(LibraryItemExpanded.from_dict(data))
+            await self.on_item_updated(LibraryItemExpanded.from_payload(data))
 
     async def _on_item_removed(self, data: dict[str, Any]) -> None:
         if self.on_item_removed is not None:
-            await self.on_item_removed(LibraryItemRemoved.from_dict(data))
+            await self.on_item_removed(LibraryItemRemoved.from_payload(data))
 
     async def _on_items_added(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_added is not None:
-            await self.on_items_added([LibraryItemExpanded.from_dict(x) for x in data])
+            await self.on_items_added([LibraryItemExpanded.from_payload(x) for x in data])
 
     async def _on_items_updated(self, data: list[dict[str, Any]]) -> None:
         if self.on_items_updated is not None:
-            await self.on_items_updated([LibraryItemExpanded.from_dict(x) for x in data])
+            await self.on_items_updated([LibraryItemExpanded.from_payload(x) for x in data])
+
+    async def _on_episode_added(self, data: dict[str, Any]) -> None:
+        if self.on_episode_added is not None:
+            await self.on_episode_added(PodcastEpisodeAdded.from_payload(data))
+
+    async def _on_library_added(self, data: dict[str, Any]) -> None:
+        if self.on_library_added is not None:
+            await self.on_library_added(Library.from_payload(data))
+
+    async def _on_library_updated(self, data: dict[str, Any]) -> None:
+        if self.on_library_updated is not None:
+            await self.on_library_updated(Library.from_payload(data))
+
+    async def _on_library_removed(self, data: dict[str, Any]) -> None:
+        if self.on_library_removed is not None:
+            await self.on_library_removed(Library.from_payload(data))
 
     async def _on_episode_download_finished(self, data: dict[str, Any]) -> None:
         if self.on_episode_download_finished is not None:
-            await self.on_episode_download_finished(PodcastEpisodeDownload.from_dict(data))
+            await self.on_episode_download_finished(PodcastEpisodeDownload.from_payload(data))
 
     async def _on_stream_open(self, data: dict[str, Any]) -> None:
         if self.on_stream_open is not None:
-            await self.on_stream_open(Stream.from_dict(data))
+            await self.on_stream_open(Stream.from_payload(data))
 
     async def _on_stream_closed(self, stream_id: str) -> None:
         if self.on_stream_closed is not None:
@@ -346,7 +413,7 @@ class SocketClient:
 
     async def _on_stream_progress(self, data: dict[str, Any]) -> None:
         if self.on_stream_progress is not None:
-            await self.on_stream_progress(StreamProgress.from_dict(data))
+            await self.on_stream_progress(StreamProgress.from_payload(data))
 
     async def _on_stream_ready(self) -> None:
         if self.on_stream_ready is not None:
@@ -354,36 +421,32 @@ class SocketClient:
 
     async def _on_stream_reset(self, data: dict[str, Any]) -> None:
         if self.on_stream_reset is not None:
-            await self.on_stream_reset(StreamReset.from_dict(data))
+            await self.on_stream_reset(StreamReset.from_payload(data))
 
     async def _on_stream_error(self, data: dict[str, Any]) -> None:
         if self.on_stream_error is not None:
-            await self.on_stream_error(StreamError.from_dict(data))
+            await self.on_stream_error(StreamError.from_payload(data))
 
     async def _on_playlist_added(self, data: dict[str, Any]) -> None:
         if self.on_playlist_added is not None:
-            await self.on_playlist_added(PlaylistExpanded.from_dict(data))
+            await self.on_playlist_added(PlaylistExpanded.from_payload(data))
 
     async def _on_playlist_updated(self, data: dict[str, Any]) -> None:
         if self.on_playlist_updated is not None:
-            await self.on_playlist_updated(PlaylistExpanded.from_dict(data))
+            await self.on_playlist_updated(PlaylistExpanded.from_payload(data))
 
     async def _on_playlist_removed(self, data: dict[str, Any]) -> None:
         if self.on_playlist_removed is not None:
-            await self.on_playlist_removed(PlaylistExpanded.from_dict(data))
+            await self.on_playlist_removed(PlaylistExpanded.from_payload(data))
 
     async def _on_author_added(self, data: dict[str, Any]) -> None:
         if self.on_author_added is not None:
-            await self.on_author_added(Author.from_dict(data))
+            await self.on_author_added(Author.from_payload(data))
 
     async def _on_author_updated(self, data: dict[str, Any]) -> None:
         if self.on_author_updated is not None:
-            await self.on_author_updated(AuthorExpanded.from_dict(data))
+            await self.on_author_updated(AuthorExpanded.from_payload(data))
 
     async def _on_author_removed(self, data: dict[str, Any]) -> None:
         if self.on_author_removed is not None:
-            await self.on_author_removed(AuthorRemoved.from_dict(data))
-
-    async def _on_authors_added(self, data: list[dict[str, Any]]) -> None:
-        if self.on_authors_added is not None:
-            await self.on_authors_added([Author.from_dict(x) for x in data])
+            await self.on_author_removed(AuthorRemoved.from_payload(data))

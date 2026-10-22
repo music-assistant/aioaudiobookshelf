@@ -74,18 +74,17 @@ class ItemsClient(BaseClient):
     # update chapters
     # tone scan
 
-    async def _get_libray_item_batch(
+    async def _get_library_item_batch(
         self, *, item_ids: list[str] | LibraryItemsBatchParameters
-    ) -> bytes:
-        if isinstance(item_ids, list):
-            if not item_ids:
-                return b""
-            params = LibraryItemsBatchParameters(library_item_ids=item_ids)
-        else:
-            if not item_ids.library_item_ids:
-                return b""
-            params = item_ids
-
+    ) -> bytes | None:
+        """Request the batch, or None if there is nothing to ask for."""
+        params = (
+            LibraryItemsBatchParameters(library_item_ids=item_ids)
+            if isinstance(item_ids, list)
+            else item_ids
+        )
+        if not params.library_item_ids:
+            return None
         return await self._post("/api/items/batch/get", data=params.to_dict())
 
     async def get_library_item_batch_book(
@@ -93,8 +92,10 @@ class ItemsClient(BaseClient):
     ) -> list[LibraryItemExpandedBook]:
         """Get multiple library items at once. Always expanded."""
         try:
-            data = await self._get_libray_item_batch(item_ids=item_ids)
+            data = await self._get_library_item_batch(item_ids=item_ids)
         except NotFoundError:
+            return []
+        if data is None:
             return []
         return LibraryItemsBatchBookResponse.from_json(data).library_items
 
@@ -103,8 +104,10 @@ class ItemsClient(BaseClient):
     ) -> list[LibraryItemExpandedPodcast]:
         """Get multiple library items at once. Always expanded."""
         try:
-            data = await self._get_libray_item_batch(item_ids=item_ids)
+            data = await self._get_library_item_batch(item_ids=item_ids)
         except NotFoundError:
+            return []
+        if data is None:
             return []
         return LibraryItemsBatchPodcastResponse.from_json(data).library_items
 

@@ -52,7 +52,8 @@ async def test_logout_raises_abs_error(error: Exception, expected: type[AbsError
 
 async def test_logout_has_timeout() -> None:
     """Logout can't stall for aiohttp's default timeout."""
-    post = AsyncMock()
+    # Mock, not AsyncMock, so the response's release() stays the sync call aiohttp has
+    post = AsyncMock(return_value=Mock())
     await _user_client(post).logout()
 
     assert post.call_args.kwargs["timeout"].total == 10

@@ -2,6 +2,7 @@
 
 import logging
 from abc import abstractmethod
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 
 from aiohttp.client import ClientResponse, ClientTimeout
@@ -15,11 +16,24 @@ from aioaudiobookshelf.exceptions import (
     NotFoundError,
     ServiceUnavailableError,
     TokenIsMissingError,
+    TokenNotRenewableError,
 )
 from aioaudiobookshelf.schema.calls_login import LoginResponse
 
 # logout is best effort, it must not stall a shutdown
 LOGOUT_TIMEOUT = ClientTimeout(total=10)
+
+# abs rejects an api key or a pre v2.26 token the same way it rejects an expired
+# access token, but neither of them can be refreshed
+NOT_RENEWABLE_MESSAGE = "Abs rejected the token and it cannot be refreshed."
+
+
+async def _json_body(response: ClientResponse) -> bytes:
+    """Read a json answer, or free the connection if there is none."""
+    if response.content_type == "application/json" and response.status == 200:
+        return await response.read()
+    response.release()
+    return b""
 
 
 class BaseClient:
@@ -33,21 +47,9 @@ class BaseClient:
         self.server_settings = login_response.server_settings
 
         if not self.session_config.token and not self.session_config.refresh_token:
-            if login_response.user.refresh_token is not None:
-                assert login_response.user.access_token is not None
-                assert login_response.user.refresh_token is not None
-                self.session_config.refresh_token = login_response.user.refresh_token
-                self.session_config.access_token = login_response.user.access_token
-            elif login_response.user.token is not None:
-                assert login_response.user.token is not None
-                self.session_config.token = login_response.user.token
+            self.session_config.adopt_tokens(login_response)
 
-        if self.session_config.logger is None:
-            self.logger = logging.getLogger(__name__)
-            logging.basicConfig()
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger = self.session_config.logger
+        self.logger = self.session_config.logger or logging.getLogger(__name__)
 
         self.logger.debug(
             "Initialized client %s",
@@ -68,6 +70,19 @@ class BaseClient:
     def _verify_user(self) -> None:
         """Verify if user has enough permissions for endpoints in use."""
 
+    async def _retry(
+        self, request: Callable[[], Awaitable[ClientResponse]], error_message: str
+    ) -> ClientResponse:
+        """Repeat a request once the tokens were refreshed."""
+        try:
+            return await request()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
+        except ClientResponseError as err:
+            if err.status == 404:
+                raise NotFoundError from err
+            raise ApiError(error_message) from err
+
     async def _post(
         self,
         endpoint: str,
@@ -77,7 +92,7 @@ class BaseClient:
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.post(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 json=data,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
@@ -87,49 +102,63 @@ class BaseClient:
 
         try:
             response = await _request()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
         except ClientResponseError as exc:
-            if exc.code == 401:
+            if exc.status == 401:
+                if self.session_config.refresh_token is None:
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
-                    # TODO: remove redundant clause
-                    try:
-                        response = await _request()
-                    except ClientResponseError as inner_exc:
-                        raise ApiError(f"API POST call to {endpoint} failed.") from inner_exc
+                    response = await self._retry(_request, f"API POST call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
-            elif exc.code == 404:
+            elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API POST call to {endpoint} failed.") from exc
 
         return await response.read()
 
-    async def _get(self, endpoint: str, params: dict[str, str | int] | None = None) -> bytes:
+    async def _get(
+        self,
+        endpoint: str,
+        params: dict[str, str | int] | None = None,
+        *,
+        json_response: bool = True,
+    ) -> bytes:
         """GET request to abs api."""
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.get(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 params=params,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
                 timeout=self.session_config.timeout,
             )
 
-        response = await _request()
-        if response.status == 401:
-            if self.session_config.auto_refresh:
+        try:
+            response = await _request()
+            if response.status == 401:
+                if self.session_config.refresh_token is None:
+                    response.release()
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE)
+                if not self.session_config.auto_refresh:
+                    response.release()
+                    raise AccessTokenExpiredError
                 self.logger.debug("Auto refreshing tokens.")
+                response.release()
                 await self.refresh()
                 response = await _request()
-            else:
-                raise AccessTokenExpiredError
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
 
         status = response.status
-        if response.content_type == "application/json" and status == 200:
+        if status == 200 and (not json_response or response.content_type == "application/json"):
             return await response.read()
+        response.release()
         if status == 404:
             raise NotFoundError
         raise ApiError(f"API GET call to {endpoint} failed.")
@@ -139,7 +168,7 @@ class BaseClient:
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.patch(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 json=data,
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
@@ -149,31 +178,30 @@ class BaseClient:
 
         try:
             response = await _request()
-            if response.content_type == "application/json" and response.status == 200:
-                return await response.read()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
         except ClientResponseError as exc:
-            if exc.code == 401:
+            if exc.status == 401:
+                if self.session_config.refresh_token is None:
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
-                    try:
-                        await _request()
-                    except ClientResponseError as inner_exc:
-                        raise ApiError(f"API PATCH call to {endpoint} failed.") from inner_exc
+                    response = await self._retry(_request, f"API PATCH call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
-            elif exc.code == 404:
+            elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API PATCH call to {endpoint} failed.") from exc
-        return b""
+        return await _json_body(response)
 
     async def _delete(self, endpoint: str) -> bytes:
         """DELETE request to abs api."""
 
         async def _request() -> ClientResponse:
             return await self.session_config.session.delete(
-                f"{self.session_config.url}/{endpoint}",
+                self.session_config.url_for(endpoint),
                 ssl=self.session_config.verify_ssl,
                 headers=self.session_config.headers,
                 raise_for_status=True,
@@ -182,24 +210,23 @@ class BaseClient:
 
         try:
             response = await _request()
-            if response.content_type == "application/json" and response.status == 200:
-                return await response.read()
+        except (ClientConnectionError, TimeoutError) as err:
+            raise ServiceUnavailableError from err
         except ClientResponseError as exc:
-            if exc.code == 401:
+            if exc.status == 401:
+                if self.session_config.refresh_token is None:
+                    raise TokenNotRenewableError(NOT_RENEWABLE_MESSAGE) from exc
                 if self.session_config.auto_refresh:
                     self.logger.debug("Auto refreshing tokens.")
                     await self.refresh()
-                    try:
-                        await _request()
-                    except ClientResponseError as inner_exc:
-                        raise ApiError(f"API DELETE call to {endpoint} failed.") from inner_exc
+                    response = await self._retry(_request, f"API DELETE call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
-            elif exc.code == 404:
+            elif exc.status == 404:
                 raise NotFoundError from exc
             else:
                 raise ApiError(f"API DELETE call to {endpoint} failed.") from exc
-        return b""
+        return await _json_body(response)
 
     async def refresh(self) -> None:
         """Refresh tokens."""
@@ -210,13 +237,15 @@ class BaseClient:
         try:
             if self.session_config.refresh_token is not None:
                 # v2.26 and above
-                await self.session_config.session.post(
-                    f"{self.session_config.url}/logout",
+                response = await self.session_config.session.post(
+                    self.session_config.url_for("logout"),
                     ssl=self.session_config.verify_ssl,
                     headers=self.session_config.headers_refresh_logout,
+                    cookies=self.session_config.cookies_refresh_logout,
                     raise_for_status=True,
                     timeout=LOGOUT_TIMEOUT,
                 )
+                response.release()
             else:
                 await self._post("logout")
         except (ClientConnectionError, TimeoutError) as err:

@@ -60,7 +60,10 @@ class ServerSettings(_BaseModel):
     scanner_disable_watcher: Annotated[bool, Alias("scannerDisableWatcher")]
     store_cover_with_item: Annotated[bool, Alias("storeCoverWithItem")]
     store_metadata_with_item: Annotated[bool, Alias("storeMetadataWithItem")]
-    metadata_file_format: Annotated[ServerSettingsMetadataFileFormat, Alias("metadataFileFormat")]
+    # abs adds options to these over time, and an unknown one must not fail the login
+    metadata_file_format: Annotated[
+        ServerSettingsMetadataFileFormat | str, Alias("metadataFileFormat")
+    ]
     rate_limit_login_requests: Annotated[int, Alias("rateLimitLoginRequests")]
     rate_limit_login_window: Annotated[int, Alias("rateLimitLoginWindow")]  # ms
     # abs sends false when auto backups are off
@@ -74,8 +77,9 @@ class ServerSettings(_BaseModel):
     sorting_ignore_prefix: Annotated[bool, Alias("sortingIgnorePrefix")]
     sorting_prefixes: Annotated[list[str], Alias("sortingPrefixes")]
     chromecast_enabled: Annotated[bool, Alias("chromecastEnabled")]
-    date_format: Annotated[ServerSettingsDateFormat, Alias("dateFormat")]
-    time_format: Annotated[ServerSettingsTimeFormat, Alias("timeFormat")]
+    # see metadata_file_format
+    date_format: Annotated[ServerSettingsDateFormat | str, Alias("dateFormat")]
+    time_format: Annotated[ServerSettingsTimeFormat | str, Alias("timeFormat")]
     language: str
     log_level: Annotated[ServerLogLevel, Alias("logLevel")]
     version: str

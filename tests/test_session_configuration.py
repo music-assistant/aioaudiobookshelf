@@ -9,7 +9,7 @@ import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import RefreshTokenExpiredError
+from aioaudiobookshelf.exceptions import ApiError, LoginError, RefreshTokenExpiredError
 
 
 class FakeSession:
@@ -130,3 +130,71 @@ async def test_concurrent_login_ends_a_queued_refresh() -> None:
 
     assert session_config.access_token == "access3"
     assert session.calls == 0
+
+
+async def test_the_access_token_is_the_one_sent() -> None:
+    """BaseClient.token already prefers it, so the requests have to use the same one."""
+    session_config = SessionConfiguration(
+        session=Mock(), url="http://abs.local", token="old", access_token="access1"
+    )
+
+    assert session_config.headers == {"Authorization": "Bearer access1"}
+
+
+async def test_a_relogin_drops_the_token_it_replaced() -> None:
+    """A server which starts issuing access tokens no longer accepts the old one."""
+    session_config = SessionConfiguration(
+        session=Mock(), url="http://abs.local", token="old", refresh_token="refresh1"
+    )
+    login_response = Mock(user=Mock(access_token="access3", refresh_token="refresh3"))
+
+    with patch(
+        "aioaudiobookshelf.client.session_configuration.get_login_response",
+        AsyncMock(return_value=login_response),
+    ):
+        await session_config.authenticate(username="user", password="password")
+
+    assert session_config.token is None
+
+
+async def test_an_unreadable_refresh_answer_is_an_abs_error() -> None:
+    """Whatever abs answered with, the caller has to see one of our errors."""
+    session = FakeSession()
+    session.release.set()
+
+    with pytest.raises(ApiError):
+        await _session_config(session).refresh()
+
+
+async def test_a_login_without_tokens_is_an_error() -> None:
+    """Abs promising a token is not a reason to assert, which -O removes."""
+    session_config = SessionConfiguration(session=Mock(), url="http://abs.local")
+
+    with pytest.raises(LoginError):
+        session_config.adopt_tokens(Mock(user=Mock(access_token=None, token=None)))
+
+
+async def test_an_answer_without_tokens_leaves_the_configured_one_alone() -> None:
+    """/api/authorize answers without tokens, and that must not unset ours."""
+    session_config = _session_config(FakeSession())
+
+    session_config.adopt_tokens(Mock(user=Mock(access_token=None, token=None)))
+
+    assert session_config.access_token == "access1"
+
+
+async def test_a_refresh_without_both_tokens_is_an_error() -> None:
+    """A refresh answer we cannot use has to say so, not leave a None behind."""
+    session = FakeSession()
+    session.release.set()
+    session_config = _session_config(session)
+    response = Mock(user=Mock(access_token="access2", refresh_token=None))
+
+    with (
+        patch(
+            "aioaudiobookshelf.client.session_configuration.RefreshResponse.from_json",
+            return_value=response,
+        ),
+        pytest.raises(ApiError),
+    ):
+        await session_config.refresh()

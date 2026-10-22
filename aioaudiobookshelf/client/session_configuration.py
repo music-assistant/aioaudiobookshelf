@@ -9,12 +9,14 @@ from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 
 from aioaudiobookshelf.exceptions import (
     AbsError,
+    ApiError,
+    LoginError,
     RefreshTokenExpiredError,
     ServiceUnavailableError,
     TokenIsMissingError,
 )
 from aioaudiobookshelf.helpers import get_login_response
-from aioaudiobookshelf.schema.calls_login import RefreshResponse
+from aioaudiobookshelf.schema.calls_login import LoginResponse, RefreshResponse
 
 
 @dataclass(kw_only=True)
@@ -36,16 +38,21 @@ class SessionConfiguration:
     timeout: ClientTimeout = DEFAULT_TIMEOUT
     logger: logging.Logger | None = None
 
+    def url_for(self, endpoint: str) -> str:
+        """Build a url. Abs routes /api/..., so a second slash is not ours to send."""
+        return f"{self.url.rstrip('/')}/{endpoint.lstrip('/')}"
+
     @property
     def headers(self) -> dict[str, str]:
         """Session headers.
 
         These are normal request headers.
         """
-        if self.token is not None:
-            return {"Authorization": f"Bearer {self.token}"}
+        # the access token wins, as in BaseClient.token, so both name the same token
         if self.access_token is not None:
             return {"Authorization": f"Bearer {self.access_token}"}
+        if self.token is not None:
+            return {"Authorization": f"Bearer {self.token}"}
         raise TokenIsMissingError("Token not set.")
 
     @property
@@ -57,6 +64,19 @@ class SessionConfiguration:
         if self.refresh_token is None:
             raise TokenIsMissingError("Refresh token not set.")
         return {"x-refresh-token": self.refresh_token}
+
+    @property
+    def cookies_refresh_logout(self) -> dict[str, str]:
+        """Cookie for /auth/refresh and /logout.
+
+        On /logout abs reads `req.cookies.refresh_token || req.headers['x-refresh-token']`
+        (Auth.js), so a cookie jar shared with another client of the same server would
+        end that client's session instead of ours. On /auth/refresh the header wins,
+        which was never at risk; we send the cookie there too so both stay in step.
+        """
+        if self.refresh_token is None:
+            raise TokenIsMissingError("Refresh token not set.")
+        return {"refresh_token": self.refresh_token}
 
     def __post_init__(self) -> None:
         """Post init."""
@@ -94,9 +114,10 @@ class SessionConfiguration:
         try:
             endpoint = "auth/refresh"
             response = await self.session.post(
-                f"{self.url}/{endpoint}",
+                self.url_for(endpoint),
                 ssl=self.verify_ssl,
                 headers=self.headers_refresh_logout,
+                cookies=self.cookies_refresh_logout,
                 raise_for_status=True,
                 timeout=self.timeout,
             )
@@ -108,11 +129,32 @@ class SessionConfiguration:
             # e.g. abs' rate limit, or a proxy while abs restarts
             raise ServiceUnavailableError from err
         data = await response.read()
+        # a SchemaError from here means abs answered without the tokens we asked for
         refresh_response = RefreshResponse.from_json(data)
-        assert refresh_response.user.access_token is not None
-        assert refresh_response.user.refresh_token is not None
-        self.access_token = refresh_response.user.access_token
-        self.refresh_token = refresh_response.user.refresh_token
+        access_token = refresh_response.user.access_token
+        refresh_token = refresh_response.user.refresh_token
+        if access_token is None or refresh_token is None:
+            raise ApiError("Abs refreshed without returning both tokens.")
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+
+    def adopt_tokens(self, login_response: LoginResponse) -> None:
+        """Take the tokens abs handed out, and drop the ones they replace."""
+        user = login_response.user
+        if user.access_token is not None and user.refresh_token is not None:
+            self.access_token = user.access_token
+            self.refresh_token = user.refresh_token
+            # a server which now issues access tokens does not accept the old one
+            self.token = None
+        elif user.token is not None:
+            # pre v2.26
+            self.token = user.token
+            self.access_token = None
+            self.refresh_token = None
+        elif self.access_token is None and self.token is None:
+            # /api/authorize answers without tokens, so only a caller which has
+            # none of its own is stuck here
+            raise LoginError("Abs did not return a token we can use.")
 
     async def authenticate(self, *, username: str, password: str) -> None:
         """Relogin and update tokens if refresh token expired."""
@@ -120,14 +162,7 @@ class SessionConfiguration:
             login_response = await get_login_response(
                 session_config=self, username=username, password=password
             )
-            if login_response.user.access_token is None:
-                # pre v2.26
-                assert login_response.user.token is not None
-                self.token = login_response.user.token
-            else:
-                assert login_response.user.refresh_token is not None
-                self.access_token = login_response.user.access_token
-                self.refresh_token = login_response.user.refresh_token
+            self.adopt_tokens(login_response)
             # a refresh waiting for this lock shares the new tokens
             self.__refresh_error = None
             self.__refresh_generation += 1
