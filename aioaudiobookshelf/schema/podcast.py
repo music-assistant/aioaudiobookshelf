@@ -43,9 +43,11 @@ PodcastMetaDataExpanded = PodcastMetadataMinified
 class PodcastEpisodeChapter(_BaseModel):
     """PodcastEpisodeChapter."""
 
-    id_: Annotated[int, Alias("id")]
+    # abs stores chapters a client patches in after checking only title and start,
+    # see its controllers/PodcastController.js
+    id_: Annotated[int | None, Alias("id")] = None
     start: float
-    end: float
+    end: float | None = None
     title: str
 
 

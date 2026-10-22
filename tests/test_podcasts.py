@@ -120,3 +120,14 @@ def test_an_episode_abs_before_2_18_got_without_a_title_has_an_empty_one() -> No
     item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
 
     assert item.media.episodes[0].title == ""
+
+
+def test_an_episode_with_chapters_a_client_patched_in_without_id_or_end() -> None:
+    """Abs 2.18 and newer checks only title and start of patched chapters."""
+    episode = _episode()
+    episode["chapters"] = [{"title": "Intro", "start": 0.5}]
+
+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
+
+    chapter = item.media.episodes[0].chapters[0]
+    assert (chapter.id_, chapter.end) == (None, None)
