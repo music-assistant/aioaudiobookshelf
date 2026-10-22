@@ -21,10 +21,12 @@ class UserPermissions(_BaseModel):
     download: bool
     update: bool
     delete: bool
-    upload: bool
-    access_all_libraries: Annotated[bool, Alias("accessAllLibraries")]
-    access_all_tags: Annotated[bool, Alias("accessAllTags")]
-    access_explicit_content: Annotated[bool, Alias("accessExplicitContent")]
+    # abs migrated users' permissions as stored, older keys may be missing,
+    # and abs reads a missing one as false, see its models/User.js
+    upload: bool = False
+    access_all_libraries: Annotated[bool, Alias("accessAllLibraries")] = False
+    access_all_tags: Annotated[bool, Alias("accessAllTags")] = False
+    access_explicit_content: Annotated[bool, Alias("accessExplicitContent")] = False
 
 
 class UserType(StrEnum):

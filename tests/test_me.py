@@ -76,6 +76,38 @@ def _session_pages(total: int, items_per_page: int) -> Any:
     return body
 
 
+async def test_a_migrated_user_without_newer_permissions() -> None:
+    """Abs copied v1 permissions as stored, and reads a missing one as false."""
+    user = {
+        "id": "user1",
+        "username": "listener",
+        "type": "user",
+        "token": "token1",
+        "mediaProgress": [],
+        "seriesHideFromContinueListening": [],
+        "bookmarks": [],
+        "isActive": True,
+        "isLocked": False,
+        "lastSeen": None,
+        "createdAt": 1600000000000,
+        "permissions": {"download": True, "update": True, "delete": False},
+        "librariesAccessible": [],
+        "itemTagsSelected": [],
+    }
+    client = make_client(MeClient, RecordingSession(json.dumps(user).encode()))
+
+    permissions = (await client.get_my_user()).permissions
+
+    assert not any(
+        (
+            permissions.upload,
+            permissions.access_all_libraries,
+            permissions.access_all_tags,
+            permissions.access_explicit_content,
+        )
+    )
+
+
 async def test_a_stored_session_without_listening_time_duration_or_metadata() -> None:
     """Abs reads a stored 0 back as null, and old or local sessions lack the rest."""
     stored_session = {
