@@ -98,3 +98,15 @@ def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:
     audio_file = item.media.episodes[0].audio_file
     assert audio_file is not None
     assert audio_file.index is None
+
+
+def test_an_episode_abs_before_2_7_1_could_not_probe_has_a_duration_of_0() -> None:
+    """Abs sent the audio file's null duration, newer ones send 0 instead."""
+    episode = _episode()
+    episode["audioFile"]["duration"] = None
+    episode["audioTrack"]["duration"] = None
+    episode["duration"] = None
+
+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
+
+    assert item.media.episodes[0].duration == 0

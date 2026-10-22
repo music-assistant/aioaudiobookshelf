@@ -1,7 +1,7 @@
 """Schema for podcasts."""
 
 from dataclasses import dataclass, field
-from typing import Annotated
+from typing import Annotated, Any
 
 from mashumaro.types import Alias
 
@@ -93,10 +93,17 @@ class PodcastEpisodeExpanded(_PodcastEpisodeBase):
     """PodcastEpisodeExpanded."""
 
     audio_track: Annotated[AudioTrack, Alias("audioTrack")]
-    duration: float
+    duration: float  # 0 if abs could not probe the audio file
     size: int
     audio_file: Annotated[AudioFile | None, Alias("audioFile")] = None
     enclosure: PodcastEpisodeEnclosure | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[Any, Any]) -> dict[Any, Any]:
+        """Read a null duration as 0, as abs 2.7.1 and newer sends it."""
+        if d.get("duration") is None:
+            return {**d, "duration": 0.0}
+        return d
 
 
 @dataclass(kw_only=True)
