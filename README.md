@@ -8,6 +8,9 @@ needed for the provider will be added over time.
 
 Not all endpoints are yet implemented.
 
+Requires ABS 2.3.0 or newer, logging in to an older server raises
+`UnsupportedServerVersionError`.
+
 ## Issues
 If you are facing issues with this lib or the audiobookshelf provider, please
 use our [support repository](https://github.com/music-assistant/support) for

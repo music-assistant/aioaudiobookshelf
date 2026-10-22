@@ -10,7 +10,12 @@ from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 import aioaudiobookshelf
 from aioaudiobookshelf.client import UserClient
 from aioaudiobookshelf.client.session_configuration import SessionConfiguration
-from aioaudiobookshelf.exceptions import AbsError, SchemaError, ServiceUnavailableError
+from aioaudiobookshelf.exceptions import (
+    AbsError,
+    SchemaError,
+    ServiceUnavailableError,
+    UnsupportedServerVersionError,
+)
 from aioaudiobookshelf.schema.calls_session import SyncOpenSessionParameters
 
 from .helpers import make_client
@@ -184,6 +189,28 @@ async def test_an_unreachable_abs_does_not_look_like_a_wrong_password(
     )
 
     with pytest.raises(ServiceUnavailableError):
+        await login(session_config)
+
+
+@pytest.mark.parametrize(
+    ("version", "expected"),
+    [("2.2.20", UnsupportedServerVersionError), ("2.3.0", SchemaError)],
+)
+@pytest.mark.parametrize("login", [_login_with_password, _login_with_token])
+async def test_an_abs_too_old_to_decode_is_named_as_such(
+    login: Callable[[SessionConfiguration], Awaitable[object]],
+    version: str,
+    expected: type[Exception],
+) -> None:
+    """Abs 2.2.20 lacks e.g. metadataFileFormat, which would only read as a schema error."""
+    body = f'{{"user": {{}}, "serverSettings": {{"version": "{version}"}}, "Source": "docker"}}'
+    session_config = SessionConfiguration(
+        session=FakeSession(FakeResponse(body=body.encode())),  # type: ignore[arg-type]
+        url="http://abs.local",
+        token="api_key",
+    )
+
+    with pytest.raises(expected):
         await login(session_config)
 
 

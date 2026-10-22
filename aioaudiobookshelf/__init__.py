@@ -13,7 +13,7 @@ from aioaudiobookshelf.exceptions import (
     ServiceUnavailableError,
     TokenIsMissingError,
 )
-from aioaudiobookshelf.helpers import get_login_response
+from aioaudiobookshelf.helpers import get_login_response, read_login_response
 from aioaudiobookshelf.schema.calls_login import AuthorizeResponse
 
 __version__ = "0.2.0"
@@ -32,7 +32,7 @@ async def _get_authorize_response(*, session_config: SessionConfiguration) -> Au
         raise ServiceUnavailableError from exc
     except (ClientResponseError, InvalidUrlClientError, TokenIsMissingError) as exc:
         raise LoginError from exc
-    return AuthorizeResponse.from_json(await resp.read())
+    return read_login_response(await resp.read())
 
 
 async def get_user_client_by_token(*, session_config: SessionConfiguration) -> UserClient:

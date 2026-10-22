@@ -5,6 +5,10 @@ class AbsError(Exception):
     """Base exception for aioaudiobookshelf."""
 
 
+class UnsupportedServerVersionError(AbsError):
+    """Raised if abs is older than this lib can talk to."""
+
+
 class AbsAuthError(AbsError):
     """Base exception for authentication and authorization errors."""
 
