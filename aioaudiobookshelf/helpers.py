@@ -1,6 +1,7 @@
 """Helpers for aioaudiobookshelf."""
 
 import base64
+import json
 import urllib.parse
 from enum import StrEnum
 from typing import TYPE_CHECKING
@@ -11,11 +12,18 @@ from aiohttp.client_exceptions import (
     InvalidUrlClientError,
 )
 
-from aioaudiobookshelf.exceptions import LoginError, ServiceUnavailableError
+from aioaudiobookshelf.exceptions import (
+    LoginError,
+    ServiceUnavailableError,
+    UnsupportedServerVersionError,
+)
 from aioaudiobookshelf.schema.calls_login import LoginParameters, LoginResponse
 
 if TYPE_CHECKING:
     from aioaudiobookshelf.client.session_configuration import SessionConfiguration
+
+# older abs lacks fields the schema relies on, and answers a bad token with 404
+MIN_ABS_VERSION = (2, 6, 0)
 
 
 class FilterGroup(StrEnum):
@@ -88,4 +96,20 @@ async def get_login_response(
         raise ServiceUnavailableError from exc
     except (ClientResponseError, InvalidUrlClientError) as exc:
         raise LoginError from exc
-    return LoginResponse.from_json(await resp.read())
+    return read_login_response(await resp.read())
+
+
+def read_login_response(data: bytes) -> LoginResponse:
+    """Decode a login answer, refusing an abs older than MIN_ABS_VERSION."""
+    try:
+        version = json.loads(data)["serverSettings"]["version"]
+        too_old = tuple(int(part) for part in version.split(".")[:3]) < MIN_ABS_VERSION
+    except (ValueError, LookupError, TypeError, AttributeError):
+        # without a readable version, decoding tells what is wrong
+        too_old = False
+    if too_old:
+        minimum = ".".join(str(part) for part in MIN_ABS_VERSION)
+        raise UnsupportedServerVersionError(
+            f"Audiobookshelf {version} is not supported, {minimum} or newer is needed."
+        )
+    return LoginResponse.from_json(data)

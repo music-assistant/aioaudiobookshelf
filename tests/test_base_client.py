@@ -11,10 +11,11 @@ from aioaudiobookshelf.client.session_configuration import SessionConfiguration
 from aioaudiobookshelf.exceptions import (
     AccessTokenExpiredError,
     ApiError,
+    ForbiddenError,
     NotFoundError,
 )
 
-from .helpers import make_client
+from .helpers import json_response, make_client
 
 
 def _client(status: int) -> UserClient:
@@ -22,6 +23,7 @@ def _client(status: int) -> UserClient:
     return make_client(
         UserClient,
         Mock(
+            get=AsyncMock(return_value=json_response(status=status)),
             post=AsyncMock(side_effect=error),
             patch=AsyncMock(side_effect=error),
             delete=AsyncMock(side_effect=error),
@@ -31,6 +33,10 @@ def _client(status: int) -> UserClient:
         refresh_token="refresh1",
         auto_refresh=False,
     )
+
+
+def _get(client: UserClient) -> Awaitable[object]:
+    return client.get_playlist(playlist_id="playlist1")
 
 
 def _post(client: UserClient) -> Awaitable[object]:
@@ -44,14 +50,19 @@ def _patch(client: UserClient) -> Awaitable[object]:
 
 
 def _delete(client: UserClient) -> Awaitable[object]:
-    return client.remove_my_media_progress(media_progress_id="progress1")
+    return client.delete_playlist(playlist_id="playlist1")
 
 
 @pytest.mark.filterwarnings("error::DeprecationWarning")
-@pytest.mark.parametrize("call", [_post, _patch, _delete])
+@pytest.mark.parametrize("call", [_get, _post, _patch, _delete])
 @pytest.mark.parametrize(
     ("status", "expected"),
-    [(401, AccessTokenExpiredError), (404, NotFoundError), (500, ApiError)],
+    [
+        (401, AccessTokenExpiredError),
+        (403, ForbiddenError),
+        (404, NotFoundError),
+        (500, ApiError),
+    ],
 )
 async def test_response_status_is_mapped(
     call: Callable[[UserClient], Awaitable[object]], status: int, expected: type[Exception]
@@ -59,6 +70,11 @@ async def test_response_status_is_mapped(
     """Abs' status decides the error, read from a property aiohttp does not deprecate."""
     with pytest.raises(expected):
         await call(_client(status))
+
+
+async def test_removing_an_unknown_media_progress_is_done() -> None:
+    """Abs 2.33 and newer answers 404 for it, older ones 200."""
+    await _client(404).remove_my_media_progress(media_progress_id="progress1")
 
 
 @pytest.mark.parametrize(

@@ -98,3 +98,47 @@ def test_an_episode_scanned_before_abs_2_21_has_no_audio_file_index() -> None:
     audio_file = item.media.episodes[0].audio_file
     assert audio_file is not None
     assert audio_file.index is None
+
+
+def test_an_episode_abs_before_2_7_1_could_not_probe_has_a_duration_of_0() -> None:
+    """Abs sent the audio file's null duration, newer ones send 0 instead."""
+    episode = _episode()
+    episode["audioFile"]["duration"] = None
+    episode["audioTrack"]["duration"] = None
+    episode["duration"] = None
+
+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
+
+    assert item.media.episodes[0].duration == 0
+
+
+def test_an_episode_abs_before_2_18_got_without_a_title_has_an_empty_one() -> None:
+    """Abs stored null for a feed item without title, newer ones store an empty one."""
+    episode = _episode()
+    episode["title"] = None
+
+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
+
+    assert item.media.episodes[0].title == ""
+
+
+def test_a_podcast_without_files_from_abs_2_3_has_a_size_of_0() -> None:
+    """Abs 2.3.4 did not fill the new size column for items without files."""
+    item = json.loads(_podcast_item(_episode()))
+    item["size"] = None
+    item["media"]["episodes"] = []
+
+    podcast = LibraryItemExpandedPodcast.from_json(json.dumps(item).encode())
+
+    assert podcast.size == 0
+
+
+def test_an_episode_with_chapters_a_client_patched_in_without_id_or_end() -> None:
+    """Abs 2.18 and newer checks only title and start of patched chapters."""
+    episode = _episode()
+    episode["chapters"] = [{"title": "Intro", "start": 0.5}]
+
+    item = LibraryItemExpandedPodcast.from_json(_podcast_item(episode))
+
+    chapter = item.media.episodes[0].chapters[0]
+    assert (chapter.id_, chapter.end) == (None, None)

@@ -4,6 +4,8 @@ import json
 from math import ceil
 from typing import Any
 
+import pytest
+
 from aioaudiobookshelf.client.me import MeClient
 
 from .helpers import RecordingSession, make_client
@@ -74,6 +76,137 @@ def _session_pages(total: int, items_per_page: int) -> Any:
         return json.dumps(page).encode()
 
     return body
+
+
+def _user(permissions: dict[str, bool], item_tags_selected: list[str]) -> bytes:
+    """Build a user as abs sends it to the user itself."""
+    user = {
+        "id": "user1",
+        "username": "listener",
+        "type": "user",
+        "token": "token1",
+        "mediaProgress": [],
+        "seriesHideFromContinueListening": [],
+        "bookmarks": [],
+        "isActive": True,
+        "isLocked": False,
+        "lastSeen": None,
+        "createdAt": 1600000000000,
+        "permissions": permissions,
+        "librariesAccessible": [],
+        "itemTagsSelected": item_tags_selected,
+    }
+    return json.dumps(user).encode()
+
+
+async def test_a_migrated_user_without_newer_permissions() -> None:
+    """Abs copied v1 permissions as stored, and reads a missing one as false."""
+    body = _user({"download": True, "update": True, "delete": False}, [])
+    client = make_client(MeClient, RecordingSession(body))
+
+    permissions = (await client.get_my_user()).permissions
+
+    assert not any(
+        (
+            permissions.upload,
+            permissions.access_all_libraries,
+            permissions.access_all_tags,
+            permissions.access_explicit_content,
+            permissions.selected_tags_not_accessible,
+        )
+    )
+
+
+async def test_a_user_kept_away_from_tagged_items() -> None:
+    """Abs sends the tags as itemTagsSelected, and the permission says how they apply."""
+    permissions = {
+        "download": True,
+        "update": True,
+        "delete": False,
+        "upload": False,
+        "accessAllLibraries": True,
+        "accessAllTags": False,
+        "accessExplicitContent": True,
+        "selectedTagsNotAccessible": True,
+    }
+    client = make_client(MeClient, RecordingSession(_user(permissions, ["horror"])))
+
+    user = await client.get_my_user()
+
+    assert user.item_tags_selected == ["horror"]
+    assert user.permissions.selected_tags_not_accessible
+    with pytest.warns(DeprecationWarning):
+        assert user.item_tags_accessible == ["horror"]
+
+
+async def test_a_stored_session_abs_could_not_fully_map() -> None:
+    """Abs reads a stored 0 back as null, and migrated or local sessions lack the rest."""
+    stored_session = {
+        "id": "session1",
+        "userId": "user1",
+        "libraryId": None,
+        "libraryItemId": None,
+        "episodeId": None,
+        "mediaType": "book",
+        "mediaMetadata": None,
+        "chapters": [],
+        "displayTitle": "",
+        "displayAuthor": "",
+        "coverPath": None,
+        "duration": None,
+        "playMethod": 3,
+        "mediaPlayer": None,
+        "deviceInfo": {},
+        "serverVersion": None,
+        "date": "2026-10-22",
+        "dayOfWeek": "Thursday",
+        "timeListening": None,
+        "startTime": 0,
+        "currentTime": 0,
+        "startedAt": 1700000000000,
+        "updatedAt": 1700000000000,
+    }
+    page = {"total": 1, "numPages": 1, "itemsPerPage": 10, "sessions": [stored_session]}
+    client = make_client(MeClient, RecordingSession(json.dumps(page).encode()))
+
+    pages = [result async for result in client.get_my_listening_sessions()]
+
+    session = pages[0].sessions[0]
+    assert {
+        session.library_id,
+        session.library_item_id,
+        session.media_player,
+        session.server_version,
+        session.time_listening,
+        session.duration,
+        session.media_metadata,
+    } == {None}
+
+
+async def test_a_media_progress_abs_could_not_map_to_an_item() -> None:
+    """Abs sends extraData.libraryItemId or null, see its models/MediaProgress.js."""
+    progress = {
+        "id": "progress1",
+        "userId": "user1",
+        "libraryItemId": None,
+        "episodeId": None,
+        "mediaItemId": "book1",
+        "mediaItemType": "book",
+        "duration": 100.0,
+        "progress": 0.1,
+        "currentTime": 10.0,
+        "isFinished": False,
+        "hideFromContinueListening": False,
+        "lastUpdate": 1700000000000,
+        "startedAt": 1700000000000,
+        "finishedAt": None,
+    }
+    client = make_client(MeClient, RecordingSession(json.dumps(progress).encode()))
+
+    media_progress = await client.get_my_media_progress(item_id="item1")
+
+    assert media_progress is not None
+    assert media_progress.library_item_id is None
 
 
 async def test_listening_sessions_paging_stops_after_the_last_page() -> None:

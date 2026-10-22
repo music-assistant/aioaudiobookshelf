@@ -5,6 +5,10 @@ class AbsError(Exception):
     """Base exception for aioaudiobookshelf."""
 
 
+class UnsupportedServerVersionError(AbsError):
+    """Raised if abs is older than this lib can talk to."""
+
+
 class AbsAuthError(AbsError):
     """Base exception for authentication and authorization errors."""
 
@@ -47,6 +51,10 @@ class ApiError(AbsApiError):
 
 class SchemaError(ApiError):
     """Raised when abs' answer does not match the schema."""
+
+
+class ForbiddenError(ApiError):
+    """Raised when we get a 403, e.g. for another user's session."""
 
 
 class ServiceUnavailableError(AbsApiError):

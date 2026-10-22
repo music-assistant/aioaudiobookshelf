@@ -18,3 +18,20 @@ class CloseOpenSessionsParameters(_BaseModel):
 
 
 SyncOpenSessionParameters = CloseOpenSessionsParameters
+
+
+@dataclass(kw_only=True)
+class LocalSessionSyncResult(_BaseModel):
+    """LocalSessionSyncResult, see abs' managers/PlaybackSessionManager.js."""
+
+    id_: Annotated[str, Alias("id")]
+    success: bool
+    error: str | None = None
+    progress_synced: Annotated[bool, Alias("progressSynced")] = False
+
+
+@dataclass(kw_only=True)
+class SyncLocalSessionsResponse(_BaseModel):
+    """SyncLocalSessionsResponse."""
+
+    results: list[LocalSessionSyncResult]
