@@ -5,7 +5,7 @@
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Any
 
 from mashumaro.types import Alias, Discriminator
 
@@ -115,6 +115,17 @@ class _LibraryItemBase(_BaseModel):
     updated_at: Annotated[int, Alias("updatedAt")]  # ms epoch
     is_missing: Annotated[bool, Alias("isMissing")]
     is_invalid: Annotated[bool, Alias("isInvalid")]
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[Any, Any]) -> dict[Any, Any]:
+        """Read a null size as 0.
+
+        Abs 2.3.4 left it null for items without files when it added the column,
+        and sends it as stored since 2.18, see its utils/migrations/dbMigration.js.
+        """
+        if d.get("size", 0) is None:
+            return {**d, "size": 0}
+        return d
 
 
 @dataclass(kw_only=True)

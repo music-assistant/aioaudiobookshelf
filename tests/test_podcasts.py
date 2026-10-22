@@ -122,6 +122,17 @@ def test_an_episode_abs_before_2_18_got_without_a_title_has_an_empty_one() -> No
     assert item.media.episodes[0].title == ""
 
 
+def test_a_podcast_without_files_from_abs_2_3_has_a_size_of_0() -> None:
+    """Abs 2.3.4 did not fill the new size column for items without files."""
+    item = json.loads(_podcast_item(_episode()))
+    item["size"] = None
+    item["media"]["episodes"] = []
+
+    podcast = LibraryItemExpandedPodcast.from_json(json.dumps(item).encode())
+
+    assert podcast.size == 0
+
+
 def test_an_episode_with_chapters_a_client_patched_in_without_id_or_end() -> None:
     """Abs 2.18 and newer checks only title and start of patched chapters."""
     episode = _episode()
