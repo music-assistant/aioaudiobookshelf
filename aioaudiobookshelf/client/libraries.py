@@ -68,26 +68,32 @@ class LibrariesClient(BaseClient):
         response_cls: type[ResponseNormal],
         filter_str: str | None = None,
     ) -> AsyncGenerator[ResponseMinified | ResponseNormal]:
-        page_cnt = 0
+        received = 0
         params: dict[str, int | str] = {
             "minified": int(minified),
             "limit": self.session_config.pagination_items_per_page,
+            "page": 0,
         }
         if filter_str is not None:
             params["filter"] = filter_str
         while True:
-            params["page"] = page_cnt
             response = await self._get(endpoint, params)
-            page_cnt += 1
             page = (
                 response_cls_minified.from_json(response)
                 if minified
                 else response_cls.from_json(response)
             )
-            yield page
+            # decided before the caller gets the page, it may consume the results
+            received += len(page.results)
             # abs answers with limit 0 when it ignored paging and sent everything at once
-            if page.limit <= 0 or page_cnt * page.limit >= page.total:
+            if page.limit <= 0 or not page.results or received >= page.total:
+                yield page
                 return
+            # Ask for what follows what arrived. For playlists and collections abs
+            # sends everything up to index str(start) + str(limit), a multiple of
+            # limit, see its LibraryController.js
+            params["page"] = received // page.limit
+            yield page
 
     async def get_library_items(
         self, *, library_id: str, filter_str: str | None = None
