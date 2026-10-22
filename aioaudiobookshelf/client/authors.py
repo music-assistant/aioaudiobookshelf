@@ -51,7 +51,10 @@ class AuthorsClient(BaseClient):
     ) -> bytes:
         """Get image of author. If height is None, image is scaled proportionally."""
         endpoint = f"/api/authors/{author_id}/image"
-        params = {"width": width, "format": format_.value, "raw": int(raw)}
+        params = {"width": width, "format": format_.value}
         if height:
             params["height"] = height
+        # abs serves the original for any value of raw, even 0
+        if raw:
+            params["raw"] = 1
         return await self._get(endpoint, params=params, json_response=False)
