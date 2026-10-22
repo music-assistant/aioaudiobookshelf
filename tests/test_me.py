@@ -76,6 +76,42 @@ def _session_pages(total: int, items_per_page: int) -> Any:
     return body
 
 
+async def test_a_stored_session_without_listening_time_duration_or_metadata() -> None:
+    """Abs reads a stored 0 back as null, and old or local sessions lack the rest."""
+    stored_session = {
+        "id": "session1",
+        "userId": "user1",
+        "libraryId": "library1",
+        "libraryItemId": "item1",
+        "episodeId": None,
+        "mediaType": "book",
+        "mediaMetadata": None,
+        "chapters": [],
+        "displayTitle": "",
+        "displayAuthor": "",
+        "coverPath": None,
+        "duration": None,
+        "playMethod": 3,
+        "mediaPlayer": "unknown",
+        "deviceInfo": {},
+        "serverVersion": "2.37.1",
+        "date": "2026-10-22",
+        "dayOfWeek": "Thursday",
+        "timeListening": None,
+        "startTime": 0,
+        "currentTime": 0,
+        "startedAt": 1700000000000,
+        "updatedAt": 1700000000000,
+    }
+    page = {"total": 1, "numPages": 1, "itemsPerPage": 10, "sessions": [stored_session]}
+    client = make_client(MeClient, RecordingSession(json.dumps(page).encode()))
+
+    pages = [result async for result in client.get_my_listening_sessions()]
+
+    session = pages[0].sessions[0]
+    assert (session.time_listening, session.duration, session.media_metadata) == (None, None, None)
+
+
 async def test_listening_sessions_paging_stops_after_the_last_page() -> None:
     """The generator has to end on its own, abs keeps answering past the last page."""
     session = RecordingSession(body=_session_pages(total=5, items_per_page=2))

@@ -49,12 +49,13 @@ class PlaybackSession(_BaseModel):
     episode_id: Annotated[str | None, Alias("episodeId")] = None
     media_type: Annotated[str, Alias("mediaType")]
     # BookMetadata first: it needs authors, narrators and series, which a podcast
-    # does not send, while PodcastMetadata would happily swallow a book
-    media_metadata: Annotated[BookMetadata | PodcastMetadata, Alias("mediaMetadata")]
+    # does not send, while PodcastMetadata would happily swallow a book.
+    # Stored sessions may have none, e.g. local ones or those migrated from abs v1.
+    media_metadata: Annotated[BookMetadata | PodcastMetadata | None, Alias("mediaMetadata")]
     display_title: Annotated[str, Alias("displayTitle")]
     display_author: Annotated[str | None, Alias("displayAuthor")] = None
     cover_path: Annotated[str | None, Alias("coverPath")] = None
-    duration: float
+    duration: float | None
     # 0: direct play, 1: direct stream, 2: transcode, 3: local
     play_method: Annotated[PlaybackMethod, Alias("playMethod")]
     media_player: Annotated[str, Alias("mediaPlayer")]
@@ -63,7 +64,8 @@ class PlaybackSession(_BaseModel):
     # YYYY-MM-DD
     date: str
     day_of_week: Annotated[str, Alias("dayOfWeek")]
-    time_listening: Annotated[float, Alias("timeListening")]  # s
+    # abs reads a stored 0 back as null, see its objects/PlaybackSession.js
+    time_listening: Annotated[float | None, Alias("timeListening")]  # s
     start_time: Annotated[float, Alias("startTime")]  # s
     current_time: Annotated[float, Alias("currentTime")]  # s
     started_at: Annotated[int, Alias("startedAt")]  # ms since Unix Epoch
@@ -75,6 +77,8 @@ class PlaybackSession(_BaseModel):
 class PlaybackSessionExpanded(PlaybackSession):
     """PlaybackSessionExpanded."""
 
+    # abs sets it when it opens a session
+    duration: float
     audio_tracks: Annotated[list[AudioTrack], Alias("audioTracks")]
     # videoTrack
     # libraryItem
