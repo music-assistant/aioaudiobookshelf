@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 from aioaudiobookshelf.exceptions import (
     AccessTokenExpiredError,
     ApiError,
+    ForbiddenError,
     NotFoundError,
     ServiceUnavailableError,
     TokenIsMissingError,
@@ -79,6 +80,8 @@ class BaseClient:
         except (ClientConnectionError, TimeoutError) as err:
             raise ServiceUnavailableError from err
         except ClientResponseError as err:
+            if err.status == 403:
+                raise ForbiddenError from err
             if err.status == 404:
                 raise NotFoundError from err
             raise ApiError(error_message) from err
@@ -114,6 +117,8 @@ class BaseClient:
                     response = await self._retry(_request, f"API POST call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
+            elif exc.status == 403:
+                raise ForbiddenError from exc
             elif exc.status == 404:
                 raise NotFoundError from exc
             else:
@@ -159,6 +164,8 @@ class BaseClient:
         if status == 200 and (not json_response or response.content_type == "application/json"):
             return await response.read()
         response.release()
+        if status == 403:
+            raise ForbiddenError
         if status == 404:
             raise NotFoundError
         raise ApiError(f"API GET call to {endpoint} failed.")
@@ -190,6 +197,8 @@ class BaseClient:
                     response = await self._retry(_request, f"API PATCH call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
+            elif exc.status == 403:
+                raise ForbiddenError from exc
             elif exc.status == 404:
                 raise NotFoundError from exc
             else:
@@ -222,6 +231,8 @@ class BaseClient:
                     response = await self._retry(_request, f"API DELETE call to {endpoint} failed.")
                 else:
                     raise AccessTokenExpiredError from exc
+            elif exc.status == 403:
+                raise ForbiddenError from exc
             elif exc.status == 404:
                 raise NotFoundError from exc
             else:

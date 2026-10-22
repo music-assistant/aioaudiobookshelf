@@ -90,7 +90,11 @@ class ItemsClient(BaseClient):
     async def get_library_item_batch_book(
         self, *, item_ids: list[str] | LibraryItemsBatchParameters
     ) -> list[LibraryItemExpandedBook]:
-        """Get multiple library items at once. Always expanded."""
+        """Get multiple library items at once. Always expanded.
+
+        Abs 2.34 and newer refuses the whole batch if one item is not accessible
+        to the user, which raises ForbiddenError.
+        """
         try:
             data = await self._get_library_item_batch(item_ids=item_ids)
         except NotFoundError:
@@ -102,7 +106,11 @@ class ItemsClient(BaseClient):
     async def get_library_item_batch_podcast(
         self, *, item_ids: list[str] | LibraryItemsBatchParameters
     ) -> list[LibraryItemExpandedPodcast]:
-        """Get multiple library items at once. Always expanded."""
+        """Get multiple library items at once. Always expanded.
+
+        Abs 2.34 and newer refuses the whole batch if one item is not accessible
+        to the user, which raises ForbiddenError.
+        """
         try:
             data = await self._get_library_item_batch(item_ids=item_ids)
         except NotFoundError:
