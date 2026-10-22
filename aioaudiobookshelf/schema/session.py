@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Any
 
 from mashumaro.types import Alias
 
@@ -91,3 +91,10 @@ class PlaybackSessionExpanded(PlaybackSession):
     audio_tracks: Annotated[list[AudioTrack], Alias("audioTracks")]
     # videoTrack
     # libraryItem
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[Any, Any]) -> dict[Any, Any]:
+        """Read a null duration as 0, as abs 2.7.1 and newer sends it for an unprobed episode."""
+        if d.get("duration") is None:
+            return {**d, "duration": 0.0}
+        return d

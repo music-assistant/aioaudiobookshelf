@@ -1,6 +1,7 @@
 """Tests for /api/session calls."""
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -88,8 +89,8 @@ async def test_local_sessions_abs_could_not_sync_are_named() -> None:
         await client.sync_local_sessions(playback_sessions=[])
 
 
-async def test_an_open_episode_session_with_a_chapter_a_client_patched_in() -> None:
-    """Abs copies the episode's chapters into the session as stored, see its Podcast.js."""
+def _open_episode_session(**changes: Any) -> bytes:
+    """Build an episode session as abs sends it for one it opened."""
     open_session = {
         "id": "session1",
         "userId": "user1",
@@ -98,7 +99,7 @@ async def test_an_open_episode_session_with_a_chapter_a_client_patched_in() -> N
         "episodeId": "episode1",
         "mediaType": "podcast",
         "mediaMetadata": {"title": "Show 1", "genres": [], "explicit": False},
-        "chapters": [{"title": "Intro", "start": 0.5}],
+        "chapters": [],
         "displayTitle": "Episode 1",
         "displayAuthor": "",
         "coverPath": None,
@@ -116,8 +117,24 @@ async def test_an_open_episode_session_with_a_chapter_a_client_patched_in() -> N
         "updatedAt": 1700000000000,
         "audioTracks": [],
     }
-    client = make_client(SessionClient, RecordingSession(json.dumps(open_session).encode()))
+    return json.dumps(open_session | changes).encode()
+
+
+async def test_an_open_episode_session_with_a_chapter_a_client_patched_in() -> None:
+    """Abs copies the episode's chapters into the session as stored, see its Podcast.js."""
+    body = _open_episode_session(chapters=[{"title": "Intro", "start": 0.5}])
+    client = make_client(SessionClient, RecordingSession(body))
 
     session = await client.get_open_session(session_id="session1")
 
     assert (session.chapters[0].title, session.chapters[0].end) == ("Intro", None)
+
+
+async def test_an_open_session_of_an_episode_abs_before_2_7_1_could_not_probe() -> None:
+    """Abs copied the audio file's null duration, newer ones send 0 instead."""
+    body = _open_episode_session(duration=None, serverVersion="2.6.0")
+    client = make_client(SessionClient, RecordingSession(body))
+
+    session = await client.get_open_session(session_id="session1")
+
+    assert session.duration == 0
