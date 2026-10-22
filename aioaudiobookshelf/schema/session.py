@@ -79,8 +79,14 @@ class PlaybackSession(_BaseModel):
 class PlaybackSessionExpanded(PlaybackSession):
     """PlaybackSessionExpanded."""
 
-    # abs sets it when it opens a session
+    # abs sets these when it opens a session, only stored ones may lack them
+    library_id: Annotated[str, Alias("libraryId")]
+    library_item_id: Annotated[str, Alias("libraryItemId")]
+    media_metadata: Annotated[BookMetadata | PodcastMetadata, Alias("mediaMetadata")]
     duration: float
+    media_player: Annotated[str, Alias("mediaPlayer")]
+    server_version: Annotated[str, Alias("serverVersion")]
+    time_listening: Annotated[float, Alias("timeListening")]  # s
     audio_tracks: Annotated[list[AudioTrack], Alias("audioTracks")]
     # videoTrack
     # libraryItem
