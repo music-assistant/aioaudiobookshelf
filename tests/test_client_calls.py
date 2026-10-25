@@ -10,6 +10,7 @@ from aioaudiobookshelf.client import UserClient
 from aioaudiobookshelf.client.authors import AuthorImageFormat
 from aioaudiobookshelf.exceptions import SchemaError
 from aioaudiobookshelf.schema.calls_authors import AuthorWithItems, AuthorWithItemsAndSeries
+from aioaudiobookshelf.schema.calls_playlists import UpdatePlaylistParameters
 from aioaudiobookshelf.schema.playlist import PlaylistItem
 
 from .helpers import RecordingSession, make_client
@@ -77,16 +78,34 @@ async def test_an_author_include_builds_one_query(
     assert session.urls == [f"http://abs.local/api/authors/author1{expected_query}"]
 
 
-async def test_an_author_image_is_asked_for_with_its_size() -> None:
-    """The image is not json, and abs scales it from the query."""
+@pytest.mark.parametrize(
+    ("kwargs", "expected_raw"),
+    [({}, {}), ({"raw": True}, {"raw": 1})],
+)
+async def test_an_author_image_is_asked_for_with_its_size(
+    kwargs: dict[str, bool], expected_raw: dict[str, int]
+) -> None:
+    """The image is not json; abs scales it unless raw is in the query at all."""
     session = RecordingSession(b"an-image")
 
     image = await make_client(UserClient, session).get_author_image(
-        author_id="author1", width=200, height=100, format_=AuthorImageFormat.WEBP
+        author_id="author1", width=200, height=100, format_=AuthorImageFormat.WEBP, **kwargs
     )
 
     assert image == b"an-image"
-    assert session.calls[0].params == {"width": 200, "format": "webp", "raw": 0, "height": 100}
+    assert session.calls[0].params == {"width": 200, "format": "webp", "height": 100} | expected_raw
+
+
+async def test_a_playlist_update_sends_only_what_is_set() -> None:
+    """Abs before v2.17.7 empties the playlist on items: [] and clears on a null."""
+    session = RecordingSession()
+
+    with pytest.raises(SchemaError, match="Playlist"):
+        await make_client(UserClient, session).update_playlist(
+            playlist_id="playlist1", parameters=UpdatePlaylistParameters(name="Renamed")
+        )
+
+    assert session.payloads == [{"name": "Renamed"}]
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,7 @@
 """Calls to /api/me."""
 
 from collections.abc import AsyncGenerator
+from contextlib import suppress
 from typing import Any
 
 from aioaudiobookshelf.client._base import BaseClient
@@ -122,8 +123,10 @@ class MeClient(BaseClient):
         )
 
     async def remove_my_media_progress(self, *, media_progress_id: str) -> None:
-        """Remove a single media progress."""
-        await self._delete(f"/api/me/progress/{media_progress_id}")
+        """Remove a single media progress. An unknown one counts as removed."""
+        # abs 2.33 and newer answers 404 for it, older ones 200
+        with suppress(NotFoundError):
+            await self._delete(f"/api/me/progress/{media_progress_id}")
 
     async def create_my_bookmark(self, *, item_id: str, time: float, title: str) -> AudioBookmark:
         """Create a bookmark, abs renames an existing one at the same time instead."""

@@ -21,6 +21,12 @@ class AllPlaylistsResponse(_BaseModel):
 class UpdatePlaylistParameters(_BaseModel):
     """UpdatePlaylistParameters."""
 
+    class Config(_BaseModel.Config):
+        """Config."""
+
+        # abs before v2.17.7 takes an empty items list or a null as a new value
+        omit_default = True
+
     name: str
     description: str | None = None
     cover_path: Annotated[str | None, Alias("coverPath")] = None

@@ -10,6 +10,7 @@ from aioaudiobookshelf.exceptions import (
 )
 from aioaudiobookshelf.schema.calls_session import (
     CloseOpenSessionsParameters,
+    SyncLocalSessionsResponse,
     SyncOpenSessionParameters,
 )
 from aioaudiobookshelf.schema.session import PlaybackSession, PlaybackSessionExpanded
@@ -22,9 +23,13 @@ class SessionClient(BaseClient):
     # delete session
 
     async def sync_local_sessions(self, *, playback_sessions: list[PlaybackSession]) -> None:
-        """Sync/ create a local session."""
+        """Sync/ create local sessions.
+
+        Raises SessionSyncError naming the sessions abs could not sync, abs still
+        keeps the others.
+        """
         try:
-            await self._post(
+            data = await self._post(
                 "/api/session/local-all",
                 data={
                     "sessions": [
@@ -34,6 +39,14 @@ class SessionClient(BaseClient):
             )
         except ApiError as err:
             raise SessionSyncError from err
+        failed = [
+            result
+            for result in SyncLocalSessionsResponse.from_json(data).results
+            if not result.success
+        ]
+        if failed:
+            details = ", ".join(f"{result.id_} ({result.error})" for result in failed)
+            raise SessionSyncError(f"Abs could not sync the local sessions {details}.")
 
     async def sync_local_session(self, *, playback_session: PlaybackSession) -> None:
         """Sync/ create a local session."""

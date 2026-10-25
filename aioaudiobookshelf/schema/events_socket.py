@@ -24,10 +24,10 @@ class PodcastEpisodeDownload(_BaseModel):
     """PodcastEpisodeDownload."""
 
     id_: Annotated[str, Alias("id")]
-    episode_display_title: Annotated[str, Alias("episodeDisplayTitle")]
+    episode_display_title: Annotated[str | None, Alias("episodeDisplayTitle")] = None
     url: str
     library_item_id: Annotated[str, Alias("libraryItemId")]
-    library_id: Annotated[str, Alias("libraryId")]
+    library_id: Annotated[str | None, Alias("libraryId")] = None
     is_finished: Annotated[bool, Alias("isFinished")]
     failed: bool
     started_at: Annotated[int | None, Alias("startedAt")] = None

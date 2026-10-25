@@ -15,7 +15,8 @@ class MediaProgress(_BaseModel):
     """MediaProgress."""
 
     id_: Annotated[str, Alias("id")]
-    library_item_id: Annotated[str, Alias("libraryItemId")]
+    # null if abs could not map it, see its models/MediaProgress.js
+    library_item_id: Annotated[str | None, Alias("libraryItemId")]
     episode_id: Annotated[str | None, Alias("episodeId")] = None
     # https://github.com/music-assistant/aioaudiobookshelf/issues/1
     progress: float | None = None  # percent 0->1

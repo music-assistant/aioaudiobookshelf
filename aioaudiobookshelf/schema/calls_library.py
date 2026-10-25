@@ -1,7 +1,7 @@
 """Calls for Libraries."""
 
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any
 
 from mashumaro.types import Alias
 
@@ -38,6 +38,7 @@ class _LibraryPaginationResponseBase(_BaseModel):
     total: int
     limit: int
     page: int
+    results: list[Any]  # each response names its own type
 
 
 @dataclass(kw_only=True)

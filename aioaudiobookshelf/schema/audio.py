@@ -44,7 +44,8 @@ class AudioTrack(_BaseModel):
 class AudioFile(_BaseModel):
     """Audiofile."""
 
-    index: int
+    # null for podcast episodes abs scanned in before its v2.21.0
+    index: int | None = None
     ino: str
     metadata: FileMetadata
     added_at: Annotated[int, Alias("addedAt")]

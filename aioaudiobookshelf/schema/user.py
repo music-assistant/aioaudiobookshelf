@@ -1,5 +1,6 @@
 """User schema."""
 
+import warnings
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Annotated
@@ -21,10 +22,13 @@ class UserPermissions(_BaseModel):
     download: bool
     update: bool
     delete: bool
-    upload: bool
-    access_all_libraries: Annotated[bool, Alias("accessAllLibraries")]
-    access_all_tags: Annotated[bool, Alias("accessAllTags")]
-    access_explicit_content: Annotated[bool, Alias("accessExplicitContent")]
+    # abs migrated users' permissions as stored, older keys may be missing,
+    # and abs reads a missing one as false, see its models/User.js
+    upload: bool = False
+    access_all_libraries: Annotated[bool, Alias("accessAllLibraries")] = False
+    access_all_tags: Annotated[bool, Alias("accessAllTags")] = False
+    access_explicit_content: Annotated[bool, Alias("accessExplicitContent")] = False
+    selected_tags_not_accessible: Annotated[bool, Alias("selectedTagsNotAccessible")] = False
 
 
 class UserType(StrEnum):
@@ -75,11 +79,20 @@ class User(_UserBase):
         default_factory=list
     )
 
-    # is apparently omitted if empty
-    # empty = all accessible
-    item_tags_accessible: Annotated[list[str], Alias("itemTagsAccessible")] = field(
+    # only applies without access_all_tags, selected_tags_not_accessible inverts it
+    item_tags_selected: Annotated[list[str], Alias("itemTagsSelected")] = field(
         default_factory=list
     )
+
+    @property
+    def item_tags_accessible(self) -> list[str]:
+        """Deprecated, use item_tags_selected. Abs renamed the key in 2.2.20."""
+        warnings.warn(
+            "item_tags_accessible is deprecated, use item_tags_selected",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.item_tags_selected
 
 
 # not yet added:

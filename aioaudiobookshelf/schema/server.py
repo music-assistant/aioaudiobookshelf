@@ -69,7 +69,8 @@ class ServerSettings(_BaseModel):
     # abs sends false when auto backups are off
     backup_schedule: Annotated[str | bool, Alias("backupSchedule")]
     backups_to_keep: Annotated[int, Alias("backupsToKeep")]
-    max_backup_size: Annotated[int, Alias("maxBackupSize")]  # GB
+    # abs' web client takes fractions, e.g. 0.5
+    max_backup_size: Annotated[float, Alias("maxBackupSize")]  # GB
     logger_daily_logs_to_keep: Annotated[int, Alias("loggerDailyLogsToKeep")]
     logger_scanner_logs_to_keep: Annotated[int, Alias("loggerScannerLogsToKeep")]
     home_bookshelf_view: Annotated[int, Alias("homeBookshelfView")]

@@ -1,7 +1,7 @@
 """Schema for podcasts."""
 
 from dataclasses import dataclass, field
-from typing import Annotated
+from typing import Annotated, Any
 
 from mashumaro.types import Alias
 
@@ -43,9 +43,11 @@ PodcastMetaDataExpanded = PodcastMetadataMinified
 class PodcastEpisodeChapter(_BaseModel):
     """PodcastEpisodeChapter."""
 
-    id_: Annotated[int, Alias("id")]
+    # abs stores chapters a client patches in after checking only title and start,
+    # see its controllers/PodcastController.js
+    id_: Annotated[int | None, Alias("id")] = None
     start: float
-    end: float
+    end: float | None = None
     title: str
 
 
@@ -70,7 +72,7 @@ class _PodcastEpisodeBase(_BaseModel):
     season: str | None = None
     episode: str | None = None
     episode_type: Annotated[str | None, Alias("episodeType")] = None
-    title: str
+    title: str  # empty if the feed gave none
     subtitle: str | None = None
     description: str | None = None
     chapters: list[PodcastEpisodeChapter] = field(default_factory=list)
@@ -78,6 +80,13 @@ class _PodcastEpisodeBase(_BaseModel):
     published_at: Annotated[int | None, Alias("publishedAt")] = None  # ms posix epoch
     added_at: Annotated[int, Alias("addedAt")]  # ms posix epoch
     updated_at: Annotated[int, Alias("updatedAt")]  # ms posix epoch
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[Any, Any]) -> dict[Any, Any]:
+        """Read a null title as empty, as abs 2.18 and newer stores it."""
+        if d.get("title") is None:
+            return {**d, "title": ""}
+        return d
 
 
 @dataclass(kw_only=True)
@@ -93,10 +102,18 @@ class PodcastEpisodeExpanded(_PodcastEpisodeBase):
     """PodcastEpisodeExpanded."""
 
     audio_track: Annotated[AudioTrack, Alias("audioTrack")]
-    duration: float
+    duration: float  # 0 if abs could not probe the audio file
     size: int
     audio_file: Annotated[AudioFile | None, Alias("audioFile")] = None
     enclosure: PodcastEpisodeEnclosure | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[Any, Any]) -> dict[Any, Any]:
+        """Read a null duration as 0, as abs 2.7.1 and newer sends it."""
+        d = super().__pre_deserialize__(d)
+        if d.get("duration") is None:
+            return {**d, "duration": 0.0}
+        return d
 
 
 @dataclass(kw_only=True)
