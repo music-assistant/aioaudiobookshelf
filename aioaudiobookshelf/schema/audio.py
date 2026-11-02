@@ -18,7 +18,7 @@ class AudioBookmark(_BaseModel):
 
     library_item_id: Annotated[str, Alias("libraryItemId")]
     title: str
-    time: int  # seconds
+    time: float  # seconds
     created_at: Annotated[int, Alias("createdAt")]  # unix epoch ms
 
 
